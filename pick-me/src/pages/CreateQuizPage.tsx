@@ -1,0 +1,262 @@
+import { Plus, Trash2, UsersRound } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { templates } from "../data/templates";
+import { roomApi, uid } from "../lib/api";
+import type { QuizRoom } from "../types";
+
+type FormValues = {
+  title: string;
+  isAnonymous: boolean;
+  requireName: boolean;
+};
+
+type DraftQuestion = {
+  id: string;
+  text: string;
+  answerMode: "participants" | "custom";
+  customOptions: string[];
+};
+
+const defaultCustomOptions = ["Evet", "Hayır", "Kararsızım"];
+
+export function CreateQuizPage() {
+  const { templateId } = useParams();
+  const template = templates.find((item) => item.id === templateId) || templates[0];
+  const [questions, setQuestions] = useState<DraftQuestion[]>(() =>
+    template.questions.map((question) => ({
+      id: uid("draft"),
+      text: question.text,
+      answerMode: question.answerMode || "participants",
+      customOptions: question.customOptions || defaultCustomOptions,
+    })),
+  );
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const defaults = useMemo(
+    () => ({
+      title: templateId ? template.title : "Bizim Grup Testi",
+      isAnonymous: true,
+      requireName: true,
+    }),
+    [template, templateId],
+  );
+
+  const { register, handleSubmit, watch } = useForm<FormValues>({ defaultValues: defaults });
+
+  if (!user) return <Navigate to="/auth" replace />;
+
+  const updateQuestion = (id: string, patch: Partial<DraftQuestion>) => {
+    setQuestions((items) => items.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  };
+
+  const updateCustomOption = (questionId: string, optionIndex: number, value: string) => {
+    setQuestions((items) =>
+      items.map((item) =>
+        item.id === questionId
+          ? {
+              ...item,
+              customOptions: item.customOptions.map((option, index) => (index === optionIndex ? value : option)),
+            }
+          : item,
+      ),
+    );
+  };
+
+  const submit = async (values: FormValues) => {
+    const cleanQuestions = questions
+      .map((question) => {
+        const customOptions = [...new Set(question.customOptions.map((item) => item.trim()).filter(Boolean))];
+
+        return {
+          id: uid("q"),
+          text: question.text.trim(),
+          answerMode: question.answerMode,
+          customOptions,
+        };
+      })
+      .filter((question) => question.text && (question.answerMode === "participants" || question.customOptions.length >= 2));
+
+    if (cleanQuestions.length < 1) return;
+
+    const room: QuizRoom = {
+      id: uid("room"),
+      ownerId: user.id,
+      title: values.title,
+      participants: [],
+      questions: cleanQuestions,
+      isAnonymous: values.isAnonymous,
+      requireName: values.requireName,
+      activeQuestionIndex: 0,
+      showSummary: false,
+      votes: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    await roomApi.create(room);
+    navigate(`/join/${room.id}`);
+  };
+
+  return (
+    <section>
+      <div className="page-head">
+        <div>
+          <h1>Quiz oluştur</h1>
+          <p>Her soruda cevapları katılan kişilerden veya özel seçeneklerden seçebilirsin.</p>
+        </div>
+      </div>
+
+      <form className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr]" onSubmit={handleSubmit(submit)}>
+        <div className="panel-card space-y-4">
+          <label className="field">
+            <span>Quiz adı</span>
+            <input className="plain-input" {...register("title", { required: true })} />
+          </label>
+
+          <label className="switch-row">
+            <span>
+              <b>Anonim sonuç</b>
+              <small>Oy veren isimleri sonuçlarda gizlenir.</small>
+            </span>
+            <input type="checkbox" {...register("isAnonymous")} />
+          </label>
+          <label className="switch-row">
+            <span>
+              <b>Katılımda ad zorunlu</b>
+              <small>Katılan isimleri, katılımcı cevaplı sorularda seçenek olarak görünür.</small>
+            </span>
+            <input type="checkbox" {...register("requireName")} />
+          </label>
+
+          <div className="rounded-2xl bg-mint/15 p-4 text-sm font-bold leading-6 text-emerald-800">
+            <UsersRound className="mb-2" size={22} />
+            “Katılımcılar” seçilen sorularda cevaplar oda linkinden giren isimlerden oluşur.
+          </div>
+        </div>
+
+        <div className="panel-card">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-black">Sorular</h2>
+              <p className="text-slate-600">Sorunun altında cevap tipini belirle.</p>
+            </div>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() =>
+                setQuestions((items) => [
+                  ...items,
+                  { id: uid("draft"), text: "", answerMode: "participants", customOptions: defaultCustomOptions },
+                ])
+              }
+            >
+              <Plus size={18} />
+              Soru
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {questions.map((question, index) => (
+              <div className="rounded-[22px] border border-slate-200 bg-white/70 p-4" key={question.id}>
+                <label className="field">
+                  <span>Soru {index + 1}</span>
+                  <input
+                    className="plain-input"
+                    value={question.text}
+                    onChange={(event) => updateQuestion(question.id, { text: event.target.value })}
+                    placeholder="Kim en çok geç cevap verir?"
+                  />
+                </label>
+
+                <div className="mt-4 grid gap-2 rounded-2xl bg-slate-100 p-1 sm:grid-cols-2">
+                  <button
+                    className={`tab-button ${question.answerMode === "participants" ? "active" : ""}`}
+                    type="button"
+                    onClick={() => updateQuestion(question.id, { answerMode: "participants" })}
+                  >
+                    Katılımcılar
+                  </button>
+                  <button
+                    className={`tab-button ${question.answerMode === "custom" ? "active" : ""}`}
+                    type="button"
+                    onClick={() => updateQuestion(question.id, { answerMode: "custom" })}
+                  >
+                    Özel cevaplar
+                  </button>
+                </div>
+
+                {question.answerMode === "custom" ? (
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 p-3">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <span className="font-extrabold text-slate-700">Özel cevap seçenekleri</span>
+                      <button
+                        className="secondary-button min-h-10 px-4 text-sm"
+                        type="button"
+                        onClick={() => updateQuestion(question.id, { customOptions: [...question.customOptions, ""] })}
+                      >
+                        <Plus size={16} />
+                        Cevap
+                      </button>
+                    </div>
+                    <div className="grid gap-2">
+                      {question.customOptions.map((option, optionIndex) => (
+                        <div className="grid grid-cols-[42px_1fr_auto] items-center gap-2" key={`${question.id}-${optionIndex}`}>
+                          <span className="grid h-10 w-10 place-items-center rounded-xl bg-grape/10 font-black text-grape">
+                            {String.fromCharCode(65 + optionIndex)}
+                          </span>
+                          <input
+                            className="plain-input min-h-10"
+                            value={option}
+                            onChange={(event) => updateCustomOption(question.id, optionIndex, event.target.value)}
+                            placeholder="Cevap seçeneği"
+                          />
+                          <button
+                            className="danger-button min-h-10 px-3"
+                            type="button"
+                            onClick={() =>
+                              question.customOptions.length > 2 &&
+                              updateQuestion(question.id, {
+                                customOptions: question.customOptions.filter((_, index) => index !== optionIndex),
+                              })
+                            }
+                            aria-label="Cevabı sil"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-2xl bg-grape/10 p-4 text-sm font-bold leading-6 text-grape">
+                    Bu soruda cevap seçenekleri quiz linkinden katılan kişilerin adları olacak.
+                  </div>
+                )}
+
+                <button
+                  className="danger-button mt-4"
+                  type="button"
+                  onClick={() => questions.length > 1 && setQuestions((items) => items.filter((item) => item.id !== question.id))}
+                >
+                  <Trash2 size={16} />
+                  Sil
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-2xl bg-grape/10 p-4 text-sm font-bold text-grape">
+            Önizleme: {watch("isAnonymous") ? "Anonim sonuç" : "İsimli sonuç"} · {questions.length} soru
+          </div>
+
+          <button className="primary-button mt-5 w-full justify-center" type="submit">
+            Odayı oluştur
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+}
