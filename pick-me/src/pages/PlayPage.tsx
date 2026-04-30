@@ -116,11 +116,11 @@ export function PlayPage() {
             voterKey,
             createdAt: new Date().toISOString(),
           });
-          if (index + 1 >= room.questions.length) navigate(`/results/${room.id}`);
+          if (index + 1 >= room.questions.length) navigate(`/join/${room.id}`);
           else navigate(`/play/${room.id}/${index + 1}`);
         }}
       >
-        {index + 1 >= room.questions.length ? "Sonuçlara geç" : "Sonraki soru"}
+        {index + 1 >= room.questions.length ? "Bitir ve bekle" : "Sonraki soru"}
         <ArrowRight size={18} />
       </button>
     </section>

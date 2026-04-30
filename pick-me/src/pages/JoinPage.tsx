@@ -5,6 +5,22 @@ import { useAuth } from "../context/AuthContext";
 import { roomApi } from "../lib/api";
 import type { QuizRoom } from "../types";
 
+function voterKeyOf(name: string) {
+  return name.trim().toLocaleLowerCase("tr-TR");
+}
+
+function finishedCount(room: QuizRoom) {
+  return room.participants.filter((participant) => {
+    const key = voterKeyOf(participant);
+    const answeredQuestions = new Set(
+      room.votes
+        .filter((vote) => (vote.voterKey || voterKeyOf(vote.voterName)) === key)
+        .map((vote) => vote.questionId),
+    );
+    return answeredQuestions.size >= room.questions.length;
+  }).length;
+}
+
 export function JoinPage() {
   const { roomId } = useParams();
   const [room, setRoom] = useState<QuizRoom | undefined>();
@@ -99,6 +115,14 @@ export function JoinPage() {
   const voterName = loggedInName || name.trim() || "Anonim";
   const isOwner = user?.id === room.ownerId;
   const hasJoined = Boolean(sessionStorage.getItem(`pick-me-voter-${room.id}`));
+  const allFinished = room.participants.length > 0 && finishedCount(room) >= room.participants.length;
+  const currentVoterKey = voterKeyOf(voterName);
+  const answeredCount = new Set(
+    room.votes
+      .filter((vote) => (vote.voterKey || voterKeyOf(vote.voterName)) === currentVoterKey)
+      .map((vote) => vote.questionId),
+  ).size;
+  const currentPlayerFinished = answeredCount >= room.questions.length;
 
   return (
     <section className="mx-auto max-w-3xl panel-card">
@@ -189,6 +213,36 @@ export function JoinPage() {
         <div className="mt-4 rounded-2xl bg-honey/20 p-4 text-sm font-bold leading-6 text-amber-900">
           Host oyunu başlatınca quiz otomatik açılacak.
         </div>
+      ) : null}
+
+      {!isOwner && hasJoined && room.isStarted && !allFinished ? (
+        <div className="mt-4 rounded-2xl bg-mint/15 p-4 text-sm font-bold leading-6 text-emerald-800">
+          {currentPlayerFinished ? "Cevapların kaydedildi. Herkes bitirince sonuçlar açılacak." : "Oyun başladı. Kaldığın yerden devam edebilirsin."}
+        </div>
+      ) : null}
+
+      {!isOwner && hasJoined && room.isStarted && !currentPlayerFinished ? (
+        <Link className="primary-button mt-4 justify-center" to={`/play/${room.id}/${answeredCount}`}>
+          Quize devam et
+        </Link>
+      ) : null}
+
+      {!isOwner && hasJoined && room.isStarted && allFinished ? (
+        <Link className="primary-button mt-4 justify-center" to={`/results/${room.id}`}>
+          Sonuçları gör
+        </Link>
+      ) : null}
+
+      {isOwner && room.isStarted ? (
+        <div className="mt-4 rounded-2xl bg-grape/10 p-4 text-sm font-bold leading-6 text-grape">
+          Tamamlayanlar: {finishedCount(room)} / {room.participants.length}
+        </div>
+      ) : null}
+
+      {isOwner && room.isStarted && allFinished ? (
+        <Link className="primary-button mt-4 justify-center" to={`/results/${room.id}`}>
+          Sonuçlara geç
+        </Link>
       ) : null}
 
       {isOwner && room.participants.length < 1 ? (

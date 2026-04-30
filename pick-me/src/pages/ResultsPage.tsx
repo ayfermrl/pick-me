@@ -62,6 +62,31 @@ function totalAnswerCount(room: QuizRoom) {
   return room.questions.reduce((total, question) => total + voteCount(room, question), 0);
 }
 
+function participantKey(name: string) {
+  return name.trim().toLocaleLowerCase("tr-TR");
+}
+
+function participantProgress(room: QuizRoom) {
+  return room.participants.map((participant) => {
+    const key = participantKey(participant);
+    const answeredQuestions = new Set(
+      room.votes
+        .filter((vote) => (vote.voterKey || participantKey(vote.voterName)) === key)
+        .map((vote) => vote.questionId),
+    );
+    return {
+      name: participant,
+      answered: answeredQuestions.size,
+      isDone: answeredQuestions.size >= room.questions.length,
+    };
+  });
+}
+
+function isEveryoneDone(room: QuizRoom) {
+  const progress = participantProgress(room);
+  return progress.length > 0 && progress.every((item) => item.isDone);
+}
+
 function SummaryGrid({ room, onSelect }: { room: QuizRoom; onSelect?: (index: number) => void }) {
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -134,6 +159,8 @@ export function ResultsPage() {
   const link = `${window.location.origin}/join/${room.id}`;
   const isOwner = user?.id === room.ownerId;
   const isLastQuestion = activeIndex >= room.questions.length - 1;
+  const everyoneDone = isEveryoneDone(room);
+  const progress = participantProgress(room);
 
   const goToQuestion = (index: number) => {
     roomApi.setActiveQuestion(room.id, index).then(setRoom);
@@ -158,7 +185,33 @@ export function ResultsPage() {
         </button>
       </div>
 
-      {room.votes.length === 0 ? (
+      {!everyoneDone ? (
+        <div className="panel-card">
+          <h2 className="text-3xl font-black">Sonuçlar henüz kilitli</h2>
+          <p className="mt-2 text-slate-600">Herkes tüm soruları bitirince sonuç ekranı açılacak.</p>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {progress.map((item) => (
+              <div className="rounded-2xl bg-white/75 p-4" key={item.name}>
+                <div className="mb-2 flex justify-between gap-3 font-black">
+                  <span>{item.name}</span>
+                  <span>
+                    {item.answered} / {room.questions.length}
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-grape to-berry"
+                    style={{ width: `${Math.round((item.answered / room.questions.length) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <Link className="secondary-button mt-6 justify-center" to={`/join/${room.id}`}>
+            Bekleme odasına dön
+          </Link>
+        </div>
+      ) : room.votes.length === 0 ? (
         <div className="panel-card text-center">
           <h2 className="text-3xl font-black">Henüz oy yok</h2>
           <p className="mt-2 text-slate-600">Linki paylaşınca istatistikler burada dolacak.</p>
