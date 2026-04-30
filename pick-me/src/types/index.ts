@@ -30,6 +30,7 @@ export type QuizRoom = {
   questions: Question[];
   isAnonymous: boolean;
   requireName: boolean;
+  isStarted: boolean;
   activeQuestionIndex: number;
   showSummary: boolean;
   votes: Vote[];

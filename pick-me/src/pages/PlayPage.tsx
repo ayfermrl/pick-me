@@ -58,6 +58,18 @@ export function PlayPage() {
     );
   }
 
+  if (!room.isStarted) {
+    return (
+      <section className="mx-auto max-w-2xl panel-card text-center">
+        <h1 className="text-4xl font-black">Oyun henüz başlamadı</h1>
+        <p className="mt-3 leading-7 text-slate-600">Host oyunu başlatınca quiz ekranı açılacak.</p>
+        <Link className="primary-button mt-6 justify-center" to={`/join/${room.id}`}>
+          Bekleme odasına dön
+        </Link>
+      </section>
+    );
+  }
+
   const progress = Math.round(((index + 1) / room.questions.length) * 100);
 
   return (

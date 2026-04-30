@@ -1,4 +1,4 @@
-import { Copy, Play } from "lucide-react";
+import { Copy, Play, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -23,6 +23,15 @@ export function JoinPage() {
       .then(setRoom)
       .finally(() => setLoaded(true));
   }, [roomId]);
+
+  useEffect(() => {
+    if (!roomId) return;
+    return roomApi.subscribe(roomId, (nextRoom) => {
+      setRoom(nextRoom);
+      const savedName = sessionStorage.getItem(`pick-me-voter-${nextRoom.id}`);
+      if (nextRoom.isStarted && savedName) navigate(`/play/${nextRoom.id}/0`);
+    });
+  }, [navigate, roomId]);
 
   if (!roomId) {
     return (
@@ -63,6 +72,8 @@ export function JoinPage() {
   const link = `${window.location.origin}/join/${room.id}`;
   const loggedInName = user?.name.trim() || "";
   const voterName = loggedInName || name.trim() || "Anonim";
+  const isOwner = user?.id === room.ownerId;
+  const hasJoined = Boolean(sessionStorage.getItem(`pick-me-voter-${room.id}`));
 
   return (
     <section className="mx-auto max-w-3xl panel-card">
@@ -98,20 +109,67 @@ export function JoinPage() {
         </label>
       )}
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <button
-          className="primary-button justify-center"
-          onClick={async () => {
-            if (room.requireName && !voterName.trim()) return;
-            await roomApi.addParticipant(room.id, voterName);
-            sessionStorage.setItem(`pick-me-voter-${room.id}`, voterName);
-            navigate(`/play/${room.id}/0`);
-          }}
-        >
-          <Play size={18} />
-          Quize başla
-        </button>
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white/70 p-4">
+        <div className="mb-3 flex items-center gap-2 font-black">
+          <UsersRound size={20} />
+          Bekleme odası
+        </div>
+        {room.participants.length ? (
+          <div className="flex flex-wrap gap-2">
+            {room.participants.map((participant) => (
+              <span className="rounded-full bg-grape/10 px-3 py-2 text-sm font-bold text-grape" key={participant}>
+                {participant}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm font-semibold text-slate-500">Henüz katılımcı yok.</p>
+        )}
       </div>
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        {!hasJoined && !isOwner ? (
+          <button
+            className="primary-button justify-center"
+            onClick={async () => {
+              if (room.requireName && !voterName.trim()) return;
+              const updatedRoom = await roomApi.addParticipant(room.id, voterName);
+              sessionStorage.setItem(`pick-me-voter-${room.id}`, voterName);
+              if (updatedRoom) setRoom(updatedRoom);
+              if (updatedRoom?.isStarted) navigate(`/play/${updatedRoom.id}/0`);
+            }}
+          >
+            <Play size={18} />
+            Odaya katıl
+          </button>
+        ) : null}
+
+        {isOwner ? (
+          <button
+            className="primary-button justify-center"
+            disabled={room.participants.length < 2}
+            onClick={async () => {
+              const updatedRoom = await roomApi.startRoom(room.id);
+              if (updatedRoom) setRoom(updatedRoom);
+            }}
+          >
+            <Play size={18} />
+            Oyunu başlat
+          </button>
+        ) : null}
+      </div>
+
+      {!isOwner && hasJoined && !room.isStarted ? (
+        <div className="mt-4 rounded-2xl bg-honey/20 p-4 text-sm font-bold leading-6 text-amber-900">
+          Host oyunu başlatınca quiz otomatik açılacak.
+        </div>
+      ) : null}
+
+      {isOwner && room.participants.length < 2 ? (
+        <div className="mt-4 rounded-2xl bg-honey/20 p-4 text-sm font-bold leading-6 text-amber-900">
+          Oyunu başlatmak için en az 2 katılımcının odaya katılması gerekiyor.
+        </div>
+      ) : null}
     </section>
   );
 }
