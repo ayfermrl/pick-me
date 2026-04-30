@@ -46,6 +46,18 @@ export function JoinPage() {
     return () => window.clearInterval(timer);
   }, [navigate, roomId]);
 
+  useEffect(() => {
+    if (!room || !user || user.id !== room.ownerId) return;
+    const ownerName = user.name.trim();
+    if (!ownerName) return;
+    sessionStorage.setItem(`pick-me-voter-${room.id}`, ownerName);
+    const isOwnerListed = room.participants.some((participant) => participant.toLocaleLowerCase("tr-TR") === ownerName.toLocaleLowerCase("tr-TR"));
+    if (isOwnerListed) return;
+    roomApi.addParticipant(room.id, ownerName).then((updatedRoom) => {
+      if (updatedRoom) setRoom(updatedRoom);
+    });
+  }, [room, user]);
+
   if (!roomId) {
     return (
       <section className="mx-auto max-w-2xl panel-card">
@@ -164,6 +176,7 @@ export function JoinPage() {
             onClick={async () => {
               const updatedRoom = await roomApi.startRoom(room.id);
               if (updatedRoom) setRoom(updatedRoom);
+              navigate(`/play/${room.id}/0`);
             }}
           >
             <Play size={18} />

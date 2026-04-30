@@ -86,7 +86,7 @@ export function CreateQuizPage() {
       id: uid("room"),
       ownerId: user.id,
       title: values.title,
-      participants: [],
+      participants: [user.name],
       questions: cleanQuestions,
       isAnonymous: values.isAnonymous,
       requireName: values.requireName,
@@ -98,6 +98,7 @@ export function CreateQuizPage() {
     };
 
     await roomApi.create(room);
+    sessionStorage.setItem(`pick-me-voter-${room.id}`, user.name);
     navigate(`/join/${room.id}`);
   };
 
