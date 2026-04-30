@@ -33,6 +33,19 @@ export function JoinPage() {
     });
   }, [navigate, roomId]);
 
+  useEffect(() => {
+    if (!roomId) return;
+    const syncRoom = async () => {
+      const nextRoom = await roomApi.get(roomId);
+      if (!nextRoom) return;
+      setRoom(nextRoom);
+      const savedName = sessionStorage.getItem(`pick-me-voter-${nextRoom.id}`);
+      if (nextRoom.isStarted && savedName) navigate(`/play/${nextRoom.id}/0`);
+    };
+    const timer = window.setInterval(syncRoom, 1200);
+    return () => window.clearInterval(timer);
+  }, [navigate, roomId]);
+
   if (!roomId) {
     return (
       <section className="mx-auto max-w-2xl panel-card">
@@ -147,7 +160,7 @@ export function JoinPage() {
         {isOwner ? (
           <button
             className="primary-button justify-center"
-            disabled={room.participants.length < 2}
+            disabled={room.participants.length < 1}
             onClick={async () => {
               const updatedRoom = await roomApi.startRoom(room.id);
               if (updatedRoom) setRoom(updatedRoom);
@@ -165,9 +178,9 @@ export function JoinPage() {
         </div>
       ) : null}
 
-      {isOwner && room.participants.length < 2 ? (
+      {isOwner && room.participants.length < 1 ? (
         <div className="mt-4 rounded-2xl bg-honey/20 p-4 text-sm font-bold leading-6 text-amber-900">
-          Oyunu başlatmak için en az 2 katılımcının odaya katılması gerekiyor.
+          Oyunu başlatmak için en az 1 katılımcının odaya katılması gerekiyor.
         </div>
       ) : null}
     </section>
