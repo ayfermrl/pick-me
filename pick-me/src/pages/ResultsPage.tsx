@@ -385,14 +385,12 @@ export function ResultsPage() {
 
   const shareSummary = async () => {
     const text = buildSummaryShareText(room);
-    const url = window.location.origin;
 
     try {
       if (navigator.share) {
         await navigator.share({
           title: `Pick Me: ${room.title}`,
           text,
-          url,
         });
         setShareStatus("Paylaşıma hazırlandı");
       } else {
@@ -418,7 +416,6 @@ export function ResultsPage() {
         await navigator.share({
           title: `Pick Me: ${room.title}`,
           text: `Pick Me sonuç özetimiz\n${window.location.origin}`,
-          url: window.location.origin,
           files: [file],
         });
         setShareStatus("Görsel paylaşıma hazırlandı");
