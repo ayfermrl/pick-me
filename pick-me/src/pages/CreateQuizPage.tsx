@@ -1,8 +1,9 @@
-import { Plus, Trash2, UsersRound } from "lucide-react";
+import { Plus, Shuffle, Trash2, UsersRound } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { questionPool } from "../data/questionPool";
 import { templates } from "../data/templates";
 import { roomApi, uid } from "../lib/api";
 import type { QuizRoom } from "../types";
@@ -64,6 +65,19 @@ export function CreateQuizPage() {
           : item,
       ),
     );
+  };
+
+  const suggestQuestion = (questionId: string) => {
+    const currentTexts = new Set(questions.map((item) => item.text.trim().toLocaleLowerCase("tr-TR")).filter(Boolean));
+    const availableQuestions = questionPool.filter((item) => !currentTexts.has(item.text.toLocaleLowerCase("tr-TR")));
+    const pool = availableQuestions.length ? availableQuestions : questionPool;
+    const suggestion = pool[Math.floor(Math.random() * pool.length)];
+
+    updateQuestion(questionId, {
+      text: suggestion.text,
+      answerMode: suggestion.answerMode || "participants",
+      customOptions: suggestion.customOptions || defaultCustomOptions,
+    });
   };
 
   const submit = async (values: FormValues) => {
@@ -165,7 +179,17 @@ export function CreateQuizPage() {
             {questions.map((question, index) => (
               <div className="rounded-[22px] border border-slate-200 bg-white/70 p-4" key={question.id}>
                 <label className="field">
-                  <span>Soru {index + 1}</span>
+                  <span className="flex flex-wrap items-center justify-between gap-2">
+                    <span>Soru {index + 1}</span>
+                    <button
+                      className="secondary-button min-h-9 px-3 text-sm"
+                      type="button"
+                      onClick={() => suggestQuestion(question.id)}
+                    >
+                      <Shuffle size={15} />
+                      Rastgele
+                    </button>
+                  </span>
                   <input
                     className="plain-input"
                     value={question.text}

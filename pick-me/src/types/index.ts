@@ -51,3 +51,10 @@ export type QuizTemplate = {
     customOptions?: string[];
   }>;
 };
+
+export type QuestionSuggestion = {
+  text: string;
+  category: QuizTemplate["category"];
+  answerMode?: "participants" | "custom";
+  customOptions?: string[];
+};
