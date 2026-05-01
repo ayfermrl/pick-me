@@ -87,6 +87,7 @@ function isEveryoneDone(room: QuizRoom) {
 }
 
 function buildSummaryShareText(room: QuizRoom) {
+  const homeUrl = window.location.origin;
   const lines = room.questions.map((question, index) => {
     const top = resultData(room, question)[0];
     const result = top?.oy ? `${top.name} (%${top.percent}, ${top.oy} oy)` : "Henüz seçim yok";
@@ -99,7 +100,7 @@ function buildSummaryShareText(room: QuizRoom) {
     "",
     ...lines,
     "",
-    "Sen de Pick Me ile grup quizini oluştur.",
+    `Sen de Pick Me ile grup quizini oluştur: ${homeUrl}`,
   ].join("\n");
 }
 
@@ -141,7 +142,6 @@ function createSummaryImage(room: QuizRoom): Promise<Blob> {
   const width = 1080;
   const padding = 72;
   const rowGap = 22;
-  const homeUrl = window.location.origin;
   const summaryItems = room.questions.map((question, index) => {
     const top = resultData(room, question)[0];
     return {
@@ -236,12 +236,9 @@ function createSummaryImage(room: QuizRoom): Promise<Blob> {
     y += rowHeight + rowGap;
   });
 
-  context.fillStyle = "#111827";
-  context.font = "900 26px Inter, Arial, sans-serif";
-  context.fillText("Sen de Pick Me'yi indir", padding, height - 72);
-  context.fillStyle = "#7c3aed";
-  context.font = "900 24px Inter, Arial, sans-serif";
-  context.fillText(homeUrl, padding, height - 36);
+  context.fillStyle = "#64748b";
+  context.font = "800 24px Inter, Arial, sans-serif";
+  context.fillText("Pick Me ile hazırlandı", padding, height - 54);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
@@ -388,7 +385,7 @@ export function ResultsPage() {
 
   const shareSummary = async () => {
     const text = buildSummaryShareText(room);
-    const url = window.location.href;
+    const url = window.location.origin;
 
     try {
       if (navigator.share) {
@@ -399,13 +396,13 @@ export function ResultsPage() {
         });
         setShareStatus("Paylaşıma hazırlandı");
       } else {
-        await navigator.clipboard.writeText(`${text}\n\n${url}`);
+        await navigator.clipboard.writeText(text);
         setShareStatus("Özet kopyalandı");
       }
       window.setTimeout(() => setShareStatus(""), 2200);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      await navigator.clipboard.writeText(`${text}\n\n${url}`);
+      await navigator.clipboard.writeText(text);
       setShareStatus("Özet kopyalandı");
       window.setTimeout(() => setShareStatus(""), 2200);
     }
@@ -420,7 +417,8 @@ export function ResultsPage() {
       if (navigator.share && canShareFile) {
         await navigator.share({
           title: `Pick Me: ${room.title}`,
-          text: "Pick Me sonuç özetimiz",
+          text: `Pick Me sonuç özetimiz\n${window.location.origin}`,
+          url: window.location.origin,
           files: [file],
         });
         setShareStatus("Görsel paylaşıma hazırlandı");
@@ -431,7 +429,8 @@ export function ResultsPage() {
         anchor.download = `pick-me-${room.id}.png`;
         anchor.click();
         URL.revokeObjectURL(objectUrl);
-        setShareStatus("PNG indirildi");
+        await navigator.clipboard.writeText(`Pick Me sonuç özetimiz\n${window.location.origin}`);
+        setShareStatus("PNG indirildi, ana sayfa linki kopyalandı");
       }
       window.setTimeout(() => setShareStatus(""), 2200);
     } catch (error) {
