@@ -141,6 +141,7 @@ function createSummaryImage(room: QuizRoom): Promise<Blob> {
   const width = 1080;
   const padding = 72;
   const rowGap = 22;
+  const homeUrl = window.location.origin;
   const summaryItems = room.questions.map((question, index) => {
     const top = resultData(room, question)[0];
     return {
@@ -235,9 +236,12 @@ function createSummaryImage(room: QuizRoom): Promise<Blob> {
     y += rowHeight + rowGap;
   });
 
-  context.fillStyle = "#64748b";
-  context.font = "800 24px Inter, Arial, sans-serif";
-  context.fillText("pick-me-quiz.vercel.app", padding, height - 54);
+  context.fillStyle = "#111827";
+  context.font = "900 26px Inter, Arial, sans-serif";
+  context.fillText("Sen de Pick Me'yi indir", padding, height - 72);
+  context.fillStyle = "#7c3aed";
+  context.font = "900 24px Inter, Arial, sans-serif";
+  context.fillText(homeUrl, padding, height - 36);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
