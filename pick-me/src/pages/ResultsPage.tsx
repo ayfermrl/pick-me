@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Copy, ListChecks, Share2, Trophy } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Download, ListChecks, Share2, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -101,6 +101,150 @@ function buildSummaryShareText(room: QuizRoom) {
     "",
     "Sen de Pick Me ile grup quizini oluştur.",
   ].join("\n");
+}
+
+function wrapCanvasText(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let line = "";
+
+  words.forEach((word) => {
+    const nextLine = line ? `${line} ${word}` : word;
+    if (context.measureText(nextLine).width <= maxWidth) {
+      line = nextLine;
+    } else {
+      if (line) lines.push(line);
+      line = word;
+    }
+  });
+
+  if (line) lines.push(line);
+  return lines;
+}
+
+function roundedRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.lineTo(x + width - radius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + radius);
+  context.lineTo(x + width, y + height - radius);
+  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.lineTo(x + radius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - radius);
+  context.lineTo(x, y + radius);
+  context.quadraticCurveTo(x, y, x + radius, y);
+  context.closePath();
+}
+
+function createSummaryImage(room: QuizRoom): Promise<Blob> {
+  const scale = 2;
+  const width = 1080;
+  const padding = 72;
+  const rowGap = 22;
+  const summaryItems = room.questions.map((question, index) => {
+    const top = resultData(room, question)[0];
+    return {
+      index,
+      question: question.text,
+      result: top?.oy ? `${top.name} · %${top.percent} · ${top.oy} oy` : "Henüz seçim yok",
+    };
+  });
+
+  const measureCanvas = document.createElement("canvas");
+  const measureContext = measureCanvas.getContext("2d");
+  if (!measureContext) throw new Error("Görsel hazırlanamadı.");
+
+  const contentWidth = width - padding * 2;
+  measureContext.font = "800 34px Inter, Arial, sans-serif";
+  const itemHeights = summaryItems.map((item) => {
+    const questionLines = wrapCanvasText(measureContext, item.question, contentWidth - 128);
+    return Math.max(132, 74 + questionLines.length * 42);
+  });
+  const height = Math.max(1080, 370 + itemHeights.reduce((total, item) => total + item, 0) + rowGap * summaryItems.length + padding);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Görsel hazırlanamadı.");
+  context.scale(scale, scale);
+
+  const background = context.createLinearGradient(0, 0, width, height);
+  background.addColorStop(0, "#f8fafc");
+  background.addColorStop(0.5, "#f5f3ff");
+  background.addColorStop(1, "#fff7ed");
+  context.fillStyle = background;
+  context.fillRect(0, 0, width, height);
+
+  context.fillStyle = "#8b5cf6";
+  roundedRect(context, padding, padding, 72, 72, 24);
+  context.fill();
+  context.fillStyle = "#ffffff";
+  context.font = "900 38px Inter, Arial, sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText("P", padding + 36, padding + 37);
+
+  context.textAlign = "left";
+  context.textBaseline = "alphabetic";
+  context.fillStyle = "#111827";
+  context.font = "900 54px Inter, Arial, sans-serif";
+  context.fillText("Pick Me Özeti", padding + 92, padding + 50);
+  context.fillStyle = "#64748b";
+  context.font = "800 26px Inter, Arial, sans-serif";
+  context.fillText(`${room.title} · ${room.participants.length} katılımcı · ${totalAnswerCount(room)} cevap`, padding, padding + 132);
+
+  context.fillStyle = "#111827";
+  context.font = "900 42px Inter, Arial, sans-serif";
+  wrapCanvasText(context, room.title, contentWidth).slice(0, 2).forEach((line, index) => {
+    context.fillText(line, padding, padding + 210 + index * 52);
+  });
+
+  let y = padding + 310;
+  summaryItems.forEach((item, itemIndex) => {
+    const rowHeight = itemHeights[itemIndex];
+    roundedRect(context, padding, y, contentWidth, rowHeight, 30);
+    context.fillStyle = "rgba(255,255,255,0.82)";
+    context.fill();
+    context.strokeStyle = "rgba(148,163,184,0.34)";
+    context.lineWidth = 2;
+    context.stroke();
+
+    context.fillStyle = "#ede9fe";
+    roundedRect(context, padding + 26, y + 28, 58, 58, 18);
+    context.fill();
+    context.fillStyle = "#7c3aed";
+    context.font = "900 25px Inter, Arial, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(String(item.index + 1), padding + 55, y + 58);
+
+    context.textAlign = "left";
+    context.textBaseline = "alphabetic";
+    context.fillStyle = "#111827";
+    context.font = "900 34px Inter, Arial, sans-serif";
+    const questionLines = wrapCanvasText(context, item.question, contentWidth - 128).slice(0, 3);
+    questionLines.forEach((line, lineIndex) => {
+      context.fillText(line, padding + 108, y + 56 + lineIndex * 42);
+    });
+
+    context.fillStyle = "#7c3aed";
+    context.font = "900 27px Inter, Arial, sans-serif";
+    context.fillText(item.result, padding + 108, y + rowHeight - 30);
+
+    y += rowHeight + rowGap;
+  });
+
+  context.fillStyle = "#64748b";
+  context.font = "800 24px Inter, Arial, sans-serif";
+  context.fillText("pick-me-quiz.vercel.app", padding, height - 54);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("PNG oluşturulamadı."));
+    }, "image/png");
+  });
 }
 
 function SummaryGrid({ room, onSelect }: { room: QuizRoom; onSelect?: (index: number) => void }) {
@@ -263,6 +407,36 @@ export function ResultsPage() {
     }
   };
 
+  const shareSummaryImage = async () => {
+    try {
+      const blob = await createSummaryImage(room);
+      const file = new File([blob], `pick-me-${room.id}.png`, { type: "image/png" });
+      const canShareFile = Boolean(navigator.canShare?.({ files: [file] }));
+
+      if (navigator.share && canShareFile) {
+        await navigator.share({
+          title: `Pick Me: ${room.title}`,
+          text: "Pick Me sonuç özetimiz",
+          files: [file],
+        });
+        setShareStatus("Görsel paylaşıma hazırlandı");
+      } else {
+        const objectUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = objectUrl;
+        anchor.download = `pick-me-${room.id}.png`;
+        anchor.click();
+        URL.revokeObjectURL(objectUrl);
+        setShareStatus("PNG indirildi");
+      }
+      window.setTimeout(() => setShareStatus(""), 2200);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setShareStatus(error instanceof Error ? error.message : "Görsel oluşturulamadı");
+      window.setTimeout(() => setShareStatus(""), 2600);
+    }
+  };
+
   return (
     <section>
       <div className="page-head">
@@ -319,9 +493,13 @@ export function ResultsPage() {
               <p className="mt-2 text-slate-600">Bütün soruların kazananı ve oy sayısı tek ekranda.</p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <button className="primary-button" onClick={shareSummaryImage}>
+                <Download size={18} />
+                PNG paylaş
+              </button>
               <button className="primary-button" onClick={shareSummary}>
                 <Share2 size={18} />
-                Paylaş
+                Metin paylaş
               </button>
               {isOwner ? (
                 <button className="secondary-button" onClick={() => goToQuestion(room.questions.length - 1)}>
