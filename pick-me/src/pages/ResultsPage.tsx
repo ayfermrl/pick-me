@@ -13,6 +13,13 @@ type ResultItem = {
   voters: string[];
 };
 
+type TooltipProps = {
+  active?: boolean;
+  payload?: Array<{
+    payload: ResultItem;
+  }>;
+};
+
 function voterKeyOf(vote: { voterKey?: string; voterName: string }) {
   return vote.voterKey || vote.voterName.trim().toLocaleLowerCase("tr-TR");
 }
@@ -111,6 +118,70 @@ function SummaryGrid({ room, onSelect }: { room: QuizRoom; onSelect?: (index: nu
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function ResultTooltip({ active, payload }: TooltipProps) {
+  if (!active || !payload?.length) return null;
+  const item = payload[0].payload;
+  return (
+    <div className="rounded-2xl border border-white/80 bg-white/95 px-4 py-3 text-sm shadow-xl shadow-slate-900/10 backdrop-blur-xl">
+      <div className="font-black text-ink">{item.name}</div>
+      <div className="mt-1 font-bold text-grape">
+        {item.oy} oy · %{item.percent}
+      </div>
+    </div>
+  );
+}
+
+function ResultRows({ data, isAnonymous }: { data: ResultItem[]; isAnonymous: boolean }) {
+  const topFive = data.slice(0, 5);
+  const remaining = data.slice(5);
+  const [showAll, setShowAll] = useState(false);
+  const visibleRows = showAll ? data : topFive;
+
+  return (
+    <div className="mt-6">
+      <div className="mb-3 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+        <div>
+          <h3 className="text-2xl font-black">Top 5</h3>
+          <p className="mt-1 text-sm font-semibold text-slate-500">En çok oy alan cevaplar yatay sırada.</p>
+        </div>
+        {remaining.length ? (
+          <button className="secondary-button min-h-10 px-4 text-sm" onClick={() => setShowAll((value) => !value)}>
+            {showAll ? "Top 5'e dön" : `Tümünü göster (${data.length})`}
+          </button>
+        ) : null}
+      </div>
+
+      <div className="grid gap-3">
+        {visibleRows.map((item, index) => (
+          <div className="rounded-2xl bg-white/75 p-4" key={item.name}>
+            <div className="mb-2 grid grid-cols-[36px_1fr_auto] items-center gap-3">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-grape/10 text-sm font-black text-grape">
+                {index + 1}
+              </span>
+              <span className="min-w-0 truncate font-black">{item.name}</span>
+              <span className="font-black">
+                {item.oy} · %{item.percent}
+              </span>
+            </div>
+            <div className="h-3 overflow-hidden rounded-full bg-slate-200">
+              <div className="h-full rounded-full bg-gradient-to-r from-grape via-berry to-honey" style={{ width: `${item.percent}%` }} />
+            </div>
+            {!isAnonymous && item.voters.length ? (
+              <p className="mt-2 text-xs font-semibold text-slate-600">Seçenler: {item.voters.join(", ")}</p>
+            ) : null}
+          </div>
+        ))}
+      </div>
+
+      {remaining.length && !showAll ? (
+        <p className="mt-3 text-sm font-bold text-slate-500">
+          +{remaining.length} cevap daha var. Tümünü görmek için listeyi aç.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -285,34 +356,17 @@ export function ResultsPage() {
 
             <div className="h-56 w-full md:h-72">
               <ResponsiveContainer>
-                <BarChart data={activeData}>
+                <BarChart data={activeData.slice(0, 8)}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" />
                   <YAxis allowDecimals={false} />
-                  <Tooltip />
+                  <Tooltip content={<ResultTooltip />} cursor={{ fill: "rgba(139, 112, 221, 0.08)" }} />
                   <Bar dataKey="oy" fill="#8b70dd" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {activeData.map((item) => (
-                <div className="rounded-2xl bg-white/75 p-4" key={item.name}>
-                  <div className="mb-2 flex justify-between gap-3 font-black">
-                    <span>{item.name}</span>
-                    <span>
-                      {item.oy} · %{item.percent}
-                    </span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                    <div className="h-full rounded-full bg-gradient-to-r from-grape via-berry to-honey" style={{ width: `${item.percent}%` }} />
-                  </div>
-                  {!room.isAnonymous && item.voters.length ? (
-                    <p className="mt-2 text-xs font-semibold text-slate-600">Seçenler: {item.voters.join(", ")}</p>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+            <ResultRows data={activeData} isAnonymous={room.isAnonymous} />
         </article>
       )}
     </section>
