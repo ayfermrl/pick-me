@@ -36,6 +36,9 @@ export function PlayPage() {
     (vote) => vote.questionId === question?.id && (vote.voterKey || normalizeVoterKey(vote.voterName)) === voterKey,
   );
   const [answer, setAnswer] = useState(existingVote?.answer || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [completedRoomId, setCompletedRoomId] = useState("");
 
   useEffect(() => {
     setLoaded(false);
@@ -63,6 +66,11 @@ export function PlayPage() {
     }, 1200);
     return () => window.clearInterval(timer);
   }, [navigate, roomId]);
+
+  useEffect(() => {
+    setAnswer(existingVote?.answer || "");
+    setSubmitError("");
+  }, [existingVote?.answer, question?.id]);
 
   const options = useMemo(() => {
     if (!room || !question) return [];
@@ -108,7 +116,7 @@ export function PlayPage() {
 
   const isOwner = user?.id === room.ownerId;
   const answeredCount = answeredCountFor(room, voterKey);
-  const isFinished = answeredCount >= room.questions.length;
+  const isFinished = completedRoomId === room.id || answeredCount >= room.questions.length;
   const allFinished = everyoneFinished(room);
 
   if (isFinished) {
@@ -201,24 +209,37 @@ export function PlayPage() {
 
       <button
         className="primary-button mt-6 w-full justify-center"
-        disabled={!answer}
+        disabled={!answer || isSubmitting}
         onClick={async () => {
-          const updatedRoom = await roomApi.vote(room.id, {
-            id: uid("vote"),
-            questionId: question.id,
-            answer,
-            voterName,
-            voterKey,
-            createdAt: new Date().toISOString(),
-          });
-          if (updatedRoom) setRoom(updatedRoom);
-          if (index + 1 >= room.questions.length) return;
-          else navigate(`/play/${room.id}/${index + 1}`);
+          setIsSubmitting(true);
+          setSubmitError("");
+
+          try {
+            const updatedRoom = await roomApi.vote(room.id, {
+              id: uid("vote"),
+              questionId: question.id,
+              answer,
+              voterName,
+              voterKey,
+              createdAt: new Date().toISOString(),
+            });
+            if (updatedRoom) setRoom(updatedRoom);
+            if (index + 1 >= room.questions.length) {
+              setCompletedRoomId(room.id);
+              return;
+            }
+            navigate(`/play/${room.id}/${index + 1}`);
+          } catch (error) {
+            setSubmitError(error instanceof Error ? error.message : "Cevap kaydedilemedi. Tekrar dene.");
+          } finally {
+            setIsSubmitting(false);
+          }
         }}
       >
-        {index + 1 >= room.questions.length ? "Bitir ve bekle" : "Sonraki soru"}
+        {isSubmitting ? "Kaydediliyor" : index + 1 >= room.questions.length ? "Bitir ve bekle" : "Sonraki soru"}
         <ArrowRight size={18} />
       </button>
+      {submitError ? <p className="mt-3 text-sm font-bold text-pink-700">{submitError}</p> : null}
     </section>
   );
 }
