@@ -148,8 +148,27 @@ export const roomApi = {
     return roomApi.update(room);
   },
   async releaseResults(roomId: string): Promise<QuizRoom | undefined> {
+    const client = ensureSupabase();
     const room = await roomApi.get(roomId);
     if (!room) return undefined;
+    const { data } = await client.auth.getUser();
+    if (data.user?.id !== room.ownerId) {
+      throw new Error("Sonuçları sadece oda sahibi açabilir.");
+    }
+    const everyoneDone =
+      room.participants.length > 0 &&
+      room.participants.every((participant) => {
+        const participantKey = normalizeVoterKey(participant);
+        const answeredQuestions = new Set(
+          room.votes
+            .filter((vote) => (vote.voterKey || normalizeVoterKey(vote.voterName)) === participantKey)
+            .map((vote) => vote.questionId),
+        );
+        return answeredQuestions.size >= room.questions.length;
+      });
+    if (!everyoneDone) {
+      throw new Error("Herkes bitirmeden sonuçlar açılamaz.");
+    }
     room.resultsReleased = true;
     room.showSummary = false;
     return roomApi.update(room);
