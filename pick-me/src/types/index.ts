@@ -40,6 +40,7 @@ export type QuizRoom = {
 
 export type QuizTemplate = {
   id: string;
+  category: "Kaotik" | "Kızsal" | "Karışık" | "Ofis" | "Arkadaş" | "Parti";
   title: string;
   description: string;
   tags: string[];
