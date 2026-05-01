@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Copy, ListChecks, Trophy } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, ListChecks, Share2, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -86,6 +86,23 @@ function isEveryoneDone(room: QuizRoom) {
   return progress.length > 0 && progress.every((item) => item.isDone);
 }
 
+function buildSummaryShareText(room: QuizRoom) {
+  const lines = room.questions.map((question, index) => {
+    const top = resultData(room, question)[0];
+    const result = top?.oy ? `${top.name} (%${top.percent}, ${top.oy} oy)` : "Henüz seçim yok";
+    return `${index + 1}. ${question.text}\n   Kazanan: ${result}`;
+  });
+
+  return [
+    `Pick Me sonuçları: ${room.title}`,
+    `${room.participants.length} katılımcı · ${totalAnswerCount(room)} cevap`,
+    "",
+    ...lines,
+    "",
+    "Sen de Pick Me ile grup quizini oluştur.",
+  ].join("\n");
+}
+
 function SummaryGrid({ room, onSelect }: { room: QuizRoom; onSelect?: (index: number) => void }) {
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -170,6 +187,7 @@ export function ResultsPage() {
   const { user } = useAuth();
   const [room, setRoom] = useState<QuizRoom | undefined>();
   const [loaded, setLoaded] = useState(false);
+  const [shareStatus, setShareStatus] = useState("");
 
   useEffect(() => {
     const tick = () =>
@@ -218,6 +236,31 @@ export function ResultsPage() {
 
   const showSummary = () => {
     roomApi.showSummary(room.id).then(setRoom);
+  };
+
+  const shareSummary = async () => {
+    const text = buildSummaryShareText(room);
+    const url = window.location.href;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Pick Me: ${room.title}`,
+          text,
+          url,
+        });
+        setShareStatus("Paylaşıma hazırlandı");
+      } else {
+        await navigator.clipboard.writeText(`${text}\n\n${url}`);
+        setShareStatus("Özet kopyalandı");
+      }
+      window.setTimeout(() => setShareStatus(""), 2200);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      await navigator.clipboard.writeText(`${text}\n\n${url}`);
+      setShareStatus("Özet kopyalandı");
+      window.setTimeout(() => setShareStatus(""), 2200);
+    }
   };
 
   return (
@@ -275,12 +318,21 @@ export function ResultsPage() {
               <h2 className="text-3xl font-black">Özet</h2>
               <p className="mt-2 text-slate-600">Bütün soruların kazananı ve oy sayısı tek ekranda.</p>
             </div>
-            {isOwner ? (
-              <button className="secondary-button" onClick={() => goToQuestion(room.questions.length - 1)}>
-                Son soruya dön
+            <div className="flex flex-wrap gap-2">
+              <button className="primary-button" onClick={shareSummary}>
+                <Share2 size={18} />
+                Paylaş
               </button>
-            ) : null}
+              {isOwner ? (
+                <button className="secondary-button" onClick={() => goToQuestion(room.questions.length - 1)}>
+                  Son soruya dön
+                </button>
+              ) : null}
+            </div>
           </div>
+          {shareStatus ? (
+            <div className="mb-4 rounded-2xl bg-mint/15 p-3 text-sm font-black text-emerald-800">{shareStatus}</div>
+          ) : null}
           <SummaryGrid room={room} onSelect={isOwner ? goToQuestion : undefined} />
         </article>
       ) : (
