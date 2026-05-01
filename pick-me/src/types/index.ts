@@ -31,6 +31,7 @@ export type QuizRoom = {
   isAnonymous: boolean;
   requireName: boolean;
   isStarted: boolean;
+  resultsReleased: boolean;
   activeQuestionIndex: number;
   showSummary: boolean;
   votes: Vote[];

@@ -72,6 +72,7 @@ function fromRow(row: Record<string, unknown>): QuizRoom {
     isAnonymous: Boolean(row.is_anonymous),
     requireName: Boolean(row.require_name),
     isStarted: Boolean(row.is_started),
+    resultsReleased: Boolean(row.results_released),
     activeQuestionIndex: Number(row.active_question_index || 0),
     showSummary: Boolean(row.show_summary),
     votes: (row.votes as QuizRoom["votes"]) || [],
@@ -89,6 +90,7 @@ function toRow(room: QuizRoom) {
     is_anonymous: room.isAnonymous,
     require_name: room.requireName,
     is_started: room.isStarted,
+    results_released: room.resultsReleased,
     active_question_index: room.activeQuestionIndex,
     show_summary: room.showSummary,
     votes: room.votes,
@@ -143,6 +145,13 @@ export const roomApi = {
     const room = await roomApi.get(roomId);
     if (!room) return undefined;
     room.showSummary = true;
+    return roomApi.update(room);
+  },
+  async releaseResults(roomId: string): Promise<QuizRoom | undefined> {
+    const room = await roomApi.get(roomId);
+    if (!room) return undefined;
+    room.resultsReleased = true;
+    room.showSummary = false;
     return roomApi.update(room);
   },
   async vote(roomId: string, vote: Vote): Promise<QuizRoom | undefined> {

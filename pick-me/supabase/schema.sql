@@ -7,6 +7,7 @@ create table if not exists public.rooms (
   is_anonymous boolean not null default true,
   require_name boolean not null default true,
   is_started boolean not null default false,
+  results_released boolean not null default false,
   active_question_index integer not null default 0,
   show_summary boolean not null default false,
   votes jsonb not null default '[]'::jsonb,
@@ -17,6 +18,9 @@ alter table public.rooms enable row level security;
 
 alter table public.rooms
 add column if not exists is_started boolean not null default false;
+
+alter table public.rooms
+add column if not exists results_released boolean not null default false;
 
 drop policy if exists "rooms are readable by link" on public.rooms;
 create policy "rooms are readable by link"

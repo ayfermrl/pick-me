@@ -185,10 +185,12 @@ export function ResultsPage() {
         </button>
       </div>
 
-      {!everyoneDone ? (
+      {!room.resultsReleased ? (
         <div className="panel-card">
           <h2 className="text-3xl font-black">Sonuçlar henüz kilitli</h2>
-          <p className="mt-2 text-slate-600">Herkes tüm soruları bitirince sonuç ekranı açılacak.</p>
+          <p className="mt-2 text-slate-600">
+            {everyoneDone ? "Herkes bitirdi. Host sonuçları açınca bu ekran güncellenecek." : "Herkes tüm soruları bitirince host sonuçları açabilecek."}
+          </p>
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {progress.map((item) => (
               <div className="rounded-2xl bg-white/75 p-4" key={item.name}>

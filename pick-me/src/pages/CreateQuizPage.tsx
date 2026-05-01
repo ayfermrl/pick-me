@@ -91,6 +91,7 @@ export function CreateQuizPage() {
       isAnonymous: values.isAnonymous,
       requireName: values.requireName,
       isStarted: false,
+      resultsReleased: false,
       activeQuestionIndex: 0,
       showSummary: false,
       votes: [],

@@ -21,6 +21,28 @@ function finishedCount(room: QuizRoom) {
   }).length;
 }
 
+function answeredCountFor(room: QuizRoom, name: string) {
+  const key = voterKeyOf(name);
+  return new Set(
+    room.votes
+      .filter((vote) => (vote.voterKey || voterKeyOf(vote.voterName)) === key)
+      .map((vote) => vote.questionId),
+  ).size;
+}
+
+function routeAfterSync(room: QuizRoom, savedName: string | null, navigate: ReturnType<typeof useNavigate>) {
+  if (!savedName) return;
+  if (room.resultsReleased) {
+    navigate(`/results/${room.id}`);
+    return;
+  }
+  if (!room.isStarted) return;
+  const answeredCount = answeredCountFor(room, savedName);
+  if (answeredCount < room.questions.length) {
+    navigate(`/play/${room.id}/${answeredCount}`);
+  }
+}
+
 export function JoinPage() {
   const { roomId } = useParams();
   const [room, setRoom] = useState<QuizRoom | undefined>();
@@ -45,7 +67,7 @@ export function JoinPage() {
     return roomApi.subscribe(roomId, (nextRoom) => {
       setRoom(nextRoom);
       const savedName = sessionStorage.getItem(`pick-me-voter-${nextRoom.id}`);
-      if (nextRoom.isStarted && savedName) navigate(`/play/${nextRoom.id}/0`);
+      routeAfterSync(nextRoom, savedName, navigate);
     });
   }, [navigate, roomId]);
 
@@ -56,7 +78,7 @@ export function JoinPage() {
       if (!nextRoom) return;
       setRoom(nextRoom);
       const savedName = sessionStorage.getItem(`pick-me-voter-${nextRoom.id}`);
-      if (nextRoom.isStarted && savedName) navigate(`/play/${nextRoom.id}/0`);
+      routeAfterSync(nextRoom, savedName, navigate);
     };
     const timer = window.setInterval(syncRoom, 1200);
     return () => window.clearInterval(timer);
@@ -116,12 +138,7 @@ export function JoinPage() {
   const isOwner = user?.id === room.ownerId;
   const hasJoined = Boolean(sessionStorage.getItem(`pick-me-voter-${room.id}`));
   const allFinished = room.participants.length > 0 && finishedCount(room) >= room.participants.length;
-  const currentVoterKey = voterKeyOf(voterName);
-  const answeredCount = new Set(
-    room.votes
-      .filter((vote) => (vote.voterKey || voterKeyOf(vote.voterName)) === currentVoterKey)
-      .map((vote) => vote.questionId),
-  ).size;
+  const answeredCount = answeredCountFor(room, voterName);
   const currentPlayerFinished = answeredCount >= room.questions.length;
 
   return (
@@ -221,13 +238,19 @@ export function JoinPage() {
         </div>
       ) : null}
 
+      {!isOwner && hasJoined && room.isStarted && allFinished && !room.resultsReleased ? (
+        <div className="mt-4 rounded-2xl bg-honey/20 p-4 text-sm font-bold leading-6 text-amber-900">
+          Herkes tamamladı. Host sonuçları açınca otomatik geçeceksin.
+        </div>
+      ) : null}
+
       {!isOwner && hasJoined && room.isStarted && !currentPlayerFinished ? (
         <Link className="primary-button mt-4 justify-center" to={`/play/${room.id}/${answeredCount}`}>
           Quize devam et
         </Link>
       ) : null}
 
-      {!isOwner && hasJoined && room.isStarted && allFinished ? (
+      {!isOwner && hasJoined && room.isStarted && allFinished && room.resultsReleased ? (
         <Link className="primary-button mt-4 justify-center" to={`/results/${room.id}`}>
           Sonuçları gör
         </Link>
@@ -239,10 +262,24 @@ export function JoinPage() {
         </div>
       ) : null}
 
-      {isOwner && room.isStarted && allFinished ? (
-        <Link className="primary-button mt-4 justify-center" to={`/results/${room.id}`}>
+      {isOwner && room.isStarted && currentPlayerFinished ? (
+        <button
+          className="primary-button mt-4 justify-center"
+          disabled={!allFinished}
+          onClick={async () => {
+            const updatedRoom = await roomApi.releaseResults(room.id);
+            if (updatedRoom) setRoom(updatedRoom);
+            navigate(`/results/${room.id}`);
+          }}
+        >
           Sonuçlara geç
-        </Link>
+        </button>
+      ) : null}
+
+      {isOwner && room.isStarted && currentPlayerFinished && !allFinished ? (
+        <div className="mt-3 text-sm font-bold text-slate-500">
+          Tüm katılımcılar bitirince sonuç butonu aktif olacak.
+        </div>
       ) : null}
 
       {isOwner && room.participants.length < 1 ? (
