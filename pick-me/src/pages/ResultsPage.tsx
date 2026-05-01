@@ -234,8 +234,7 @@ export function ResultsPage() {
           <SummaryGrid room={room} onSelect={isOwner ? goToQuestion : undefined} />
         </article>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <article className="panel-card">
+        <article className="panel-card">
             <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-start">
               <div>
                 <div className="mb-2 text-sm font-extrabold text-slate-500">
@@ -314,38 +313,7 @@ export function ResultsPage() {
                 </div>
               ))}
             </div>
-          </article>
-
-          <aside className="panel-card">
-            <h2 className="text-2xl font-black">Özet</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Bütün soruların kazananı ve oy sayısı kompakt görünür.</p>
-            <div className="mt-5 grid gap-3">
-              {room.questions.map((question, index) => {
-                const data = resultData(room, question);
-                const top = data[0];
-                return (
-                  <button
-                    className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${
-                      activeIndex === index ? "border-grape bg-grape/10" : "border-slate-200 bg-white/75"
-                    }`}
-                    key={question.id}
-                    onClick={() => isOwner && goToQuestion(index)}
-                    type="button"
-                  >
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <span className="text-sm font-black text-slate-500">Soru {index + 1}</span>
-                      <span className="rounded-full bg-white px-2 py-1 text-xs font-black text-slate-500">{voteCount(room, question)} oy</span>
-                    </div>
-                    <p className="line-clamp-2 font-extrabold leading-6">{question.text}</p>
-                    <p className="mt-2 text-sm font-bold text-grape">
-                      {top?.oy ? `${top.name} · %${top.percent}` : "Henüz seçim yok"}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          </aside>
-        </div>
+        </article>
       )}
     </section>
   );
