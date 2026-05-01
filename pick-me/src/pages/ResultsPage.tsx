@@ -1,7 +1,6 @@
 import { ChevronLeft, ChevronRight, Copy, ListChecks, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useAuth } from "../context/AuthContext";
 import { roomApi } from "../lib/api";
 import type { Question, QuizRoom } from "../types";
@@ -11,13 +10,6 @@ type ResultItem = {
   oy: number;
   percent: number;
   voters: string[];
-};
-
-type TooltipProps = {
-  active?: boolean;
-  payload?: Array<{
-    payload: ResultItem;
-  }>;
 };
 
 function voterKeyOf(vote: { voterKey?: string; voterName: string }) {
@@ -122,19 +114,6 @@ function SummaryGrid({ room, onSelect }: { room: QuizRoom; onSelect?: (index: nu
   );
 }
 
-function ResultTooltip({ active, payload }: TooltipProps) {
-  if (!active || !payload?.length) return null;
-  const item = payload[0].payload;
-  return (
-    <div className="rounded-2xl border border-white/80 bg-white/95 px-4 py-3 text-sm shadow-xl shadow-slate-900/10 backdrop-blur-xl">
-      <div className="font-black text-ink">{item.name}</div>
-      <div className="mt-1 font-bold text-grape">
-        {item.oy} oy · %{item.percent}
-      </div>
-    </div>
-  );
-}
-
 function ResultRows({ data, isAnonymous }: { data: ResultItem[]; isAnonymous: boolean }) {
   const topFive = data.slice(0, 5);
   const remaining = data.slice(5);
@@ -163,7 +142,7 @@ function ResultRows({ data, isAnonymous }: { data: ResultItem[]; isAnonymous: bo
                 {index + 1}
               </span>
               <span className="min-w-0 truncate font-black">{item.name}</span>
-              <span className="font-black">
+              <span className="shrink-0 font-black">
                 {item.oy} · %{item.percent}
               </span>
             </div>
@@ -348,23 +327,11 @@ export function ResultsPage() {
             ) : null}
 
             {winner?.oy ? (
-              <div className="mb-4 flex items-center gap-3 rounded-2xl bg-honey/20 p-4 font-black text-amber-900">
+              <div className="mb-6 flex items-center gap-3 rounded-2xl bg-honey/20 p-4 font-black text-amber-900">
                 <Trophy size={22} />
                 En çok seçilen: {winner.name} · {winner.oy} oy
               </div>
             ) : null}
-
-            <div className="h-56 w-full md:h-72">
-              <ResponsiveContainer>
-                <BarChart data={activeData.slice(0, 8)}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip content={<ResultTooltip />} cursor={{ fill: "rgba(139, 112, 221, 0.08)" }} />
-                  <Bar dataKey="oy" fill="#8b70dd" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
 
             <ResultRows data={activeData} isAnonymous={room.isAnonymous} />
         </article>
