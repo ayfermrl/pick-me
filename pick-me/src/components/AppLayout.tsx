@@ -19,7 +19,8 @@ export function AppLayout() {
 
           <nav className="flex gap-2 overflow-x-auto pb-1 md:items-center md:pb-0">
             <NavLink className="nav-pill" to="/templates">
-              Şablonlar
+              <Plus size={18} />
+              Hazırdan oluştur
             </NavLink>
             <NavLink className="nav-pill" to="/create">
               <Plus size={18} />
@@ -51,6 +52,28 @@ export function AppLayout() {
         <main className="px-5 py-6 md:px-10 md:py-10">
           <Outlet />
         </main>
+
+        <footer className="border-t border-slate-200/70 px-5 py-6 md:px-10">
+          <div className="flex flex-col gap-4 text-sm font-bold text-slate-500 md:flex-row md:items-center md:justify-between">
+            <div>
+              <Link to="/" className="text-base font-black text-ink">
+                Pick Me
+              </Link>
+              <p className="mt-1 font-semibold">Linkle oynanan canlı grup quizleri.</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link className="hover:text-grape" to="/templates">
+                Hazırdan oluştur
+              </Link>
+              <Link className="hover:text-grape" to="/create">
+                Quiz oluştur
+              </Link>
+              <Link className="hover:text-grape" to="/join">
+                Odaya katıl
+              </Link>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import type { QuizRoom } from "../types";
 export function HomePage() {
   const { user } = useAuth();
   const [rooms, setRooms] = useState<QuizRoom[]>([]);
+  const recentRooms = rooms.slice(0, 3);
 
   useEffect(() => {
     if (!user) {
@@ -96,15 +97,15 @@ export function HomePage() {
         <section className="panel-card">
           <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-              <h2 className="text-3xl font-black">Son odaların</h2>
-              <p className="text-slate-600">Devam etmek veya sonuçları yeniden açmak için seç.</p>
+              <h2 className="text-3xl font-black">Son 3 odan</h2>
+              <p className="text-slate-600">En yeni odalarına hızlıca dön.</p>
             </div>
             <Link className="secondary-button" to="/create">
               Yeni oda kur
             </Link>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
-            {rooms.map((room) => (
+            {recentRooms.map((room) => (
               <Link className="rounded-xl border border-slate-200 bg-white/80 p-4 transition hover:-translate-y-0.5 hover:border-grape/30" to={`/results/${room.id}`} key={room.id}>
                 <h3 className="text-lg font-black">{room.title}</h3>
                 <p className="mt-2 text-sm text-slate-600">
