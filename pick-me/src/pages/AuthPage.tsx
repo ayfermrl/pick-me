@@ -64,7 +64,7 @@ export function AuthPage() {
             <span>Ad soyad</span>
             <div className="input-shell">
               <UserRound size={18} />
-              <input {...register("name", { required: mode === "signup" })} placeholder="Ayfer Meral" />
+              <input {...register("name", { required: mode === "signup" })} placeholder="Adını yaz" />
             </div>
           </label>
         ) : null}
