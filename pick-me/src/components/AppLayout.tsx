@@ -19,8 +19,7 @@ export function AppLayout() {
 
           <nav className="flex gap-2 overflow-x-auto pb-1 md:items-center md:pb-0">
             <NavLink className="nav-pill" to="/templates">
-              <Plus size={18} />
-              Hazırdan oluştur
+              Quiz keşfet
             </NavLink>
             <NavLink className="nav-pill" to="/create">
               <Plus size={18} />
@@ -63,7 +62,7 @@ export function AppLayout() {
             </div>
             <div className="flex flex-wrap gap-3">
               <Link className="hover:text-grape" to="/templates">
-                Hazırdan oluştur
+                Quiz keşfet
               </Link>
               <Link className="hover:text-grape" to="/create">
                 Quiz oluştur
