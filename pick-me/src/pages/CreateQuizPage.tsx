@@ -1,4 +1,4 @@
-import { Plus, Shuffle, Trash2, UsersRound } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Shuffle, Trash2, UsersRound, WandSparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
@@ -34,6 +34,7 @@ export function CreateQuizPage() {
       customOptions: question.customOptions || defaultCustomOptions,
     })),
   );
+  const [suggestionCategory, setSuggestionCategory] = useState("Tümü");
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -47,6 +48,10 @@ export function CreateQuizPage() {
   );
 
   const { register, handleSubmit, watch } = useForm<FormValues>({ defaultValues: defaults });
+  const suggestionCategories = useMemo(
+    () => ["Tümü", ...Array.from(new Set(questionPool.map((question) => question.category)))],
+    [],
+  );
 
   if (!user) return <Navigate to="/auth" replace />;
 
@@ -67,16 +72,54 @@ export function CreateQuizPage() {
     );
   };
 
-  const suggestQuestion = (questionId: string) => {
+  const pickSuggestion = () => {
     const currentTexts = new Set(questions.map((item) => item.text.trim().toLocaleLowerCase("tr-TR")).filter(Boolean));
-    const availableQuestions = questionPool.filter((item) => !currentTexts.has(item.text.toLocaleLowerCase("tr-TR")));
+    const categoryPool =
+      suggestionCategory === "Tümü" ? questionPool : questionPool.filter((item) => item.category === suggestionCategory);
+    const availableQuestions = categoryPool.filter((item) => !currentTexts.has(item.text.toLocaleLowerCase("tr-TR")));
     const pool = availableQuestions.length ? availableQuestions : questionPool;
-    const suggestion = pool[Math.floor(Math.random() * pool.length)];
+    return pool[Math.floor(Math.random() * pool.length)];
+  };
+
+  const suggestQuestion = (questionId: string) => {
+    const suggestion = pickSuggestion();
 
     updateQuestion(questionId, {
       text: suggestion.text,
       answerMode: suggestion.answerMode || "participants",
       customOptions: suggestion.customOptions || defaultCustomOptions,
+    });
+  };
+
+  const fillEmptyQuestions = () => {
+    setQuestions((items) => {
+      const usedTexts = new Set(items.map((item) => item.text.trim().toLocaleLowerCase("tr-TR")).filter(Boolean));
+      return items.map((item) => {
+        if (item.text.trim()) return item;
+        const pool = questionPool.filter((question) => {
+          const sameCategory = suggestionCategory === "Tümü" || question.category === suggestionCategory;
+          return sameCategory && !usedTexts.has(question.text.toLocaleLowerCase("tr-TR"));
+        });
+        const suggestion = (pool.length ? pool : questionPool)[Math.floor(Math.random() * (pool.length ? pool.length : questionPool.length))];
+        usedTexts.add(suggestion.text.toLocaleLowerCase("tr-TR"));
+        return {
+          ...item,
+          text: suggestion.text,
+          answerMode: suggestion.answerMode || "participants",
+          customOptions: suggestion.customOptions || defaultCustomOptions,
+        };
+      });
+    });
+  };
+
+  const moveQuestion = (questionId: string, direction: -1 | 1) => {
+    setQuestions((items) => {
+      const index = items.findIndex((item) => item.id === questionId);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= items.length) return items;
+      const nextItems = [...items];
+      [nextItems[index], nextItems[nextIndex]] = [nextItems[nextIndex], nextItems[index]];
+      return nextItems;
     });
   };
 
@@ -152,6 +195,24 @@ export function CreateQuizPage() {
             <UsersRound className="mb-2" size={22} />
             Katılımcılar seçeneği, odaya giren isimleri otomatik cevap şıkkına dönüştürür.
           </div>
+
+          <div className="hint-box">
+            <b className="mb-2 block text-ink">Soru fikri filtresi</b>
+            <div className="flex flex-wrap gap-2">
+              {suggestionCategories.map((category) => (
+                <button
+                  className={`rounded-full px-3 py-2 text-sm font-black transition ${
+                    suggestionCategory === category ? "bg-grape text-white" : "bg-white text-slate-600 hover:text-grape"
+                  }`}
+                  key={category}
+                  type="button"
+                  onClick={() => setSuggestionCategory(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="panel-card">
@@ -173,6 +234,10 @@ export function CreateQuizPage() {
               <Plus size={18} />
               Soru ekle
             </button>
+            <button className="secondary-button" type="button" onClick={fillEmptyQuestions}>
+              <WandSparkles size={18} />
+              Boşları doldur
+            </button>
           </div>
 
           <div className="space-y-4">
@@ -181,14 +246,22 @@ export function CreateQuizPage() {
                 <label className="field">
                   <span className="flex flex-wrap items-center justify-between gap-2">
                     <span>Soru {index + 1}</span>
-                    <button
-                      className="secondary-button min-h-9 px-3 text-sm"
-                      type="button"
-                      onClick={() => suggestQuestion(question.id)}
-                    >
-                      <Shuffle size={15} />
-                      Fikir ver
-                    </button>
+                    <span className="flex flex-wrap gap-2">
+                      <button className="secondary-button min-h-9 px-3 text-sm" type="button" onClick={() => moveQuestion(question.id, -1)} disabled={index === 0}>
+                        <ArrowUp size={15} />
+                      </button>
+                      <button className="secondary-button min-h-9 px-3 text-sm" type="button" onClick={() => moveQuestion(question.id, 1)} disabled={index === questions.length - 1}>
+                        <ArrowDown size={15} />
+                      </button>
+                      <button
+                        className="secondary-button min-h-9 px-3 text-sm"
+                        type="button"
+                        onClick={() => suggestQuestion(question.id)}
+                      >
+                        <Shuffle size={15} />
+                        Fikir ver
+                      </button>
+                    </span>
                   </span>
                   <input
                     className="plain-input"

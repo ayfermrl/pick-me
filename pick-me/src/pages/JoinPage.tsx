@@ -1,8 +1,9 @@
-import { Copy, Play, UsersRound } from "lucide-react";
+import { Copy, Play, UserMinus, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { roomApi } from "../lib/api";
+import { friendlyError } from "../lib/errors";
 import type { QuizRoom } from "../types";
 
 function voterKeyOf(name: string) {
@@ -50,6 +51,7 @@ export function JoinPage() {
   const [manualCode, setManualCode] = useState("");
   const [name, setName] = useState("");
   const [copied, setCopied] = useState(false);
+  const [roomError, setRoomError] = useState("");
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -59,6 +61,7 @@ export function JoinPage() {
     roomApi
       .get(roomId)
       .then(setRoom)
+      .catch(() => setRoom(undefined))
       .finally(() => setLoaded(true));
   }, [roomId]);
 
@@ -183,8 +186,26 @@ export function JoinPage() {
         {room.participants.length ? (
           <div className="flex flex-wrap gap-2">
             {room.participants.map((participant) => (
-              <span className="rounded-full bg-grape/10 px-3 py-2 text-sm font-bold text-grape" key={participant}>
+              <span className="inline-flex items-center gap-2 rounded-full bg-grape/10 px-3 py-2 text-sm font-bold text-grape" key={participant}>
                 {participant}
+                {isOwner && participant.toLocaleLowerCase("tr-TR") !== user?.name.trim().toLocaleLowerCase("tr-TR") ? (
+                  <button
+                    className="rounded-full p-1 text-grape transition hover:bg-white"
+                    type="button"
+                    aria-label={`${participant} katılımcısını çıkar`}
+                    onClick={async () => {
+                      setRoomError("");
+                      try {
+                        const updatedRoom = await roomApi.removeParticipant(room.id, participant);
+                        if (updatedRoom) setRoom(updatedRoom);
+                      } catch (error) {
+                        setRoomError(friendlyError(error, "Katılımcı çıkarılamadı."));
+                      }
+                    }}
+                  >
+                    <UserMinus size={14} />
+                  </button>
+                ) : null}
               </span>
             ))}
           </div>
@@ -192,17 +213,26 @@ export function JoinPage() {
           <p className="text-sm font-semibold text-slate-500">Henüz katılımcı yok.</p>
         )}
       </div>
+      {roomError ? <div className="mt-3 rounded-xl bg-rose-50 p-3 text-sm font-bold text-rose-700">{roomError}</div> : null}
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         {!hasJoined && !isOwner ? (
           <button
             className="primary-button justify-center"
             onClick={async () => {
-              if (room.requireName && !voterName.trim()) return;
-              const updatedRoom = await roomApi.addParticipant(room.id, voterName);
-              sessionStorage.setItem(`pick-me-voter-${room.id}`, voterName);
-              if (updatedRoom) setRoom(updatedRoom);
-              if (updatedRoom?.isStarted) navigate(`/play/${updatedRoom.id}/0`);
+              setRoomError("");
+              if (room.requireName && !voterName.trim()) {
+                setRoomError("Devam etmek için adını yaz.");
+                return;
+              }
+              try {
+                const updatedRoom = await roomApi.addParticipant(room.id, voterName);
+                sessionStorage.setItem(`pick-me-voter-${room.id}`, voterName);
+                if (updatedRoom) setRoom(updatedRoom);
+                if (updatedRoom?.isStarted) navigate(`/play/${updatedRoom.id}/0`);
+              } catch (error) {
+                setRoomError(friendlyError(error, "Odaya katılım tamamlanamadı."));
+              }
             }}
           >
             <Play size={18} />
@@ -215,9 +245,14 @@ export function JoinPage() {
             className="primary-button justify-center"
             disabled={room.participants.length < 1}
             onClick={async () => {
-              const updatedRoom = await roomApi.startRoom(room.id);
-              if (updatedRoom) setRoom(updatedRoom);
-              navigate(`/play/${room.id}/0`);
+              setRoomError("");
+              try {
+                const updatedRoom = await roomApi.startRoom(room.id);
+                if (updatedRoom) setRoom(updatedRoom);
+                navigate(`/play/${room.id}/0`);
+              } catch (error) {
+                setRoomError(friendlyError(error, "Oyun başlatılamadı."));
+              }
             }}
           >
             <Play size={18} />

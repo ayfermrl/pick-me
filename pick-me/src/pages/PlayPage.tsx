@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { normalizeVoterKey, roomApi, uid } from "../lib/api";
+import { friendlyError } from "../lib/errors";
 import type { QuizRoom } from "../types";
 
 const optionLetter = (index: number) => String.fromCharCode(65 + index);
@@ -230,7 +231,7 @@ export function PlayPage() {
             }
             navigate(`/play/${room.id}/${index + 1}`);
           } catch (error) {
-            setSubmitError(error instanceof Error ? error.message : "Cevap kaydedilemedi. Tekrar dene.");
+            setSubmitError(friendlyError(error, "Cevap kaydedilemedi. Tekrar dene."));
           } finally {
             setIsSubmitting(false);
           }

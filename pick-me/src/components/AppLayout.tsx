@@ -61,6 +61,9 @@ export function AppLayout() {
               <p className="mt-1 font-semibold">Linkle oynanan canlı grup quizleri.</p>
             </div>
             <div className="flex flex-wrap gap-3">
+              <Link className="hover:text-grape" to="/about">
+                Hakkında
+              </Link>
               <Link className="hover:text-grape" to="/templates">
                 Quiz keşfet
               </Link>
@@ -69,6 +72,12 @@ export function AppLayout() {
               </Link>
               <Link className="hover:text-grape" to="/join">
                 Odaya katıl
+              </Link>
+              <Link className="hover:text-grape" to="/privacy">
+                Gizlilik
+              </Link>
+              <Link className="hover:text-grape" to="/terms">
+                Koşullar
               </Link>
             </div>
           </div>

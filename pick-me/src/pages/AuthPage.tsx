@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { Navigate, useNavigate } from "react-router-dom";
 import { LockKeyhole, Mail, UserRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { friendlyError } from "../lib/errors";
 import { isSupabaseConfigured } from "../lib/supabase";
 
 type FormValues = {
@@ -27,7 +28,7 @@ export function AuthPage() {
       else await signIn(values.email, values.password);
       navigate("/create");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "İşlem tamamlanamadı.");
+      setError(friendlyError(err, "Giriş işlemi tamamlanamadı."));
     }
   };
 

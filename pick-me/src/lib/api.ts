@@ -13,6 +13,14 @@ export const normalizeVoterKey = (name: string) => name.trim().toLocaleLowerCase
 export const uid = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 9)}-${Date.now().toString(36).slice(-5)}`;
 
+async function rpcOrFallback<T>(rpcName: string, params: Record<string, unknown>, fallback: () => Promise<T>): Promise<T> {
+  const client = ensureSupabase();
+  const { data, error } = await client.rpc(rpcName, params);
+  if (!error) return data ? (fromRow(data as Record<string, unknown>) as T) : fallback();
+  if (error.message.includes("Could not find the function") || error.code === "PGRST202") return fallback();
+  throw error;
+}
+
 export const authApi = {
   async currentUser(): Promise<User | null> {
     const client = ensureSupabase();
@@ -115,75 +123,136 @@ export const roomApi = {
     const client = ensureSupabase();
     const { data, error } = await client.from("rooms").insert(toRow(room)).select("*").single();
     if (error) throw error;
+    await Promise.allSettled([
+      client.from("room_questions").insert(
+        room.questions.map((question, index) => ({
+          id: question.id,
+          room_id: room.id,
+          position: index,
+          text: question.text,
+          answer_mode: question.answerMode,
+          custom_options: question.customOptions,
+        })),
+      ),
+      client.from("room_participants").insert(
+        room.participants.map((participant) => ({
+          room_id: room.id,
+          name: participant,
+          voter_key: normalizeVoterKey(participant),
+        })),
+      ),
+    ]);
     return fromRow(data);
   },
   async addParticipant(roomId: string, name: string): Promise<QuizRoom | undefined> {
-    const room = await roomApi.get(roomId);
-    if (!room) return undefined;
-    const cleanName = name.trim();
-    if (cleanName && !room.participants.some((item) => item.toLocaleLowerCase("tr-TR") === cleanName.toLocaleLowerCase("tr-TR"))) {
-      room.participants = [...room.participants, cleanName];
-    }
-    return roomApi.update(room);
+    return rpcOrFallback<QuizRoom | undefined>("join_room", { p_room_id: roomId, p_name: name }, async () => {
+      const room = await roomApi.get(roomId);
+      if (!room) return undefined;
+      const cleanName = name.trim();
+      if (cleanName && !room.participants.some((item) => item.toLocaleLowerCase("tr-TR") === cleanName.toLocaleLowerCase("tr-TR"))) {
+        room.participants = [...room.participants, cleanName];
+      }
+      return roomApi.update(room);
+    });
+  },
+  async removeParticipant(roomId: string, name: string): Promise<QuizRoom | undefined> {
+    return rpcOrFallback<QuizRoom | undefined>("remove_room_participant", { p_room_id: roomId, p_name: name }, async () => {
+      const client = ensureSupabase();
+      const room = await roomApi.get(roomId);
+      if (!room) return undefined;
+      const { data } = await client.auth.getUser();
+      if (data.user?.id !== room.ownerId) throw new Error("Katılımcıyı sadece oda sahibi çıkarabilir.");
+      const participantKey = normalizeVoterKey(name);
+      room.participants = room.participants.filter((item) => normalizeVoterKey(item) !== participantKey);
+      room.votes = room.votes.filter((vote) => (vote.voterKey || normalizeVoterKey(vote.voterName)) !== participantKey);
+      return roomApi.update(room);
+    });
   },
   async setActiveQuestion(roomId: string, activeQuestionIndex: number): Promise<QuizRoom | undefined> {
-    const room = await roomApi.get(roomId);
-    if (!room) return undefined;
-    room.activeQuestionIndex = Math.max(0, Math.min(activeQuestionIndex, room.questions.length - 1));
-    room.showSummary = false;
-    return roomApi.update(room);
+    return rpcOrFallback<QuizRoom | undefined>("set_room_active_question", { p_room_id: roomId, p_active_question_index: activeQuestionIndex }, async () => {
+      const room = await roomApi.get(roomId);
+      if (!room) return undefined;
+      room.activeQuestionIndex = Math.max(0, Math.min(activeQuestionIndex, room.questions.length - 1));
+      room.showSummary = false;
+      return roomApi.update(room);
+    });
   },
   async startRoom(roomId: string): Promise<QuizRoom | undefined> {
-    const room = await roomApi.get(roomId);
-    if (!room) return undefined;
-    room.isStarted = true;
-    room.activeQuestionIndex = 0;
-    room.showSummary = false;
-    return roomApi.update(room);
+    return rpcOrFallback<QuizRoom | undefined>("start_room", { p_room_id: roomId }, async () => {
+      const client = ensureSupabase();
+      const room = await roomApi.get(roomId);
+      if (!room) return undefined;
+      const { data } = await client.auth.getUser();
+      if (data.user?.id !== room.ownerId) throw new Error("Oyunu sadece oda sahibi başlatabilir.");
+      room.isStarted = true;
+      room.activeQuestionIndex = 0;
+      room.showSummary = false;
+      return roomApi.update(room);
+    });
   },
   async showSummary(roomId: string): Promise<QuizRoom | undefined> {
-    const room = await roomApi.get(roomId);
-    if (!room) return undefined;
-    room.showSummary = true;
-    return roomApi.update(room);
+    return rpcOrFallback<QuizRoom | undefined>("show_room_summary", { p_room_id: roomId }, async () => {
+      const client = ensureSupabase();
+      const room = await roomApi.get(roomId);
+      if (!room) return undefined;
+      const { data } = await client.auth.getUser();
+      if (data.user?.id !== room.ownerId) throw new Error("Özeti sadece oda sahibi açabilir.");
+      room.showSummary = true;
+      return roomApi.update(room);
+    });
   },
   async releaseResults(roomId: string): Promise<QuizRoom | undefined> {
-    const client = ensureSupabase();
-    const room = await roomApi.get(roomId);
-    if (!room) return undefined;
-    const { data } = await client.auth.getUser();
-    if (data.user?.id !== room.ownerId) {
-      throw new Error("Sonuçları sadece oda sahibi açabilir.");
-    }
-    const everyoneDone =
-      room.participants.length > 0 &&
-      room.participants.every((participant) => {
-        const participantKey = normalizeVoterKey(participant);
-        const answeredQuestions = new Set(
-          room.votes
-            .filter((vote) => (vote.voterKey || normalizeVoterKey(vote.voterName)) === participantKey)
-            .map((vote) => vote.questionId),
-        );
-        return answeredQuestions.size >= room.questions.length;
-      });
-    if (!everyoneDone) {
-      throw new Error("Herkes bitirmeden sonuçlar açılamaz.");
-    }
-    room.resultsReleased = true;
-    room.showSummary = false;
-    return roomApi.update(room);
+    return rpcOrFallback<QuizRoom | undefined>("release_room_results", { p_room_id: roomId }, async () => {
+      const client = ensureSupabase();
+      const room = await roomApi.get(roomId);
+      if (!room) return undefined;
+      const { data } = await client.auth.getUser();
+      if (data.user?.id !== room.ownerId) {
+        throw new Error("Sonuçları sadece oda sahibi açabilir.");
+      }
+      const everyoneDone =
+        room.participants.length > 0 &&
+        room.participants.every((participant) => {
+          const participantKey = normalizeVoterKey(participant);
+          const answeredQuestions = new Set(
+            room.votes
+              .filter((vote) => (vote.voterKey || normalizeVoterKey(vote.voterName)) === participantKey)
+              .map((vote) => vote.questionId),
+          );
+          return answeredQuestions.size >= room.questions.length;
+        });
+      if (!everyoneDone) {
+        throw new Error("Herkes bitirmeden sonuçlar açılamaz.");
+      }
+      room.resultsReleased = true;
+      room.showSummary = false;
+      return roomApi.update(room);
+    });
   },
   async vote(roomId: string, vote: Vote): Promise<QuizRoom | undefined> {
-    const room = await roomApi.get(roomId);
-    if (!room) return undefined;
-    const voterKey = vote.voterKey || normalizeVoterKey(vote.voterName);
-    const normalizedVote = { ...vote, voterKey };
-    room.votes = room.votes.filter((item) => {
-      const itemKey = item.voterKey || normalizeVoterKey(item.voterName);
-      return !(item.questionId === normalizedVote.questionId && itemKey === voterKey);
-    });
-    room.votes = [...room.votes, normalizedVote];
-    return roomApi.update(room);
+    return rpcOrFallback<QuizRoom | undefined>(
+      "submit_room_vote",
+      {
+        p_room_id: roomId,
+        p_vote_id: vote.id,
+        p_question_id: vote.questionId,
+        p_answer: vote.answer,
+        p_voter_name: vote.voterName,
+        p_voter_key: vote.voterKey,
+      },
+      async () => {
+        const room = await roomApi.get(roomId);
+        if (!room) return undefined;
+        const voterKey = vote.voterKey || normalizeVoterKey(vote.voterName);
+        const normalizedVote = { ...vote, voterKey };
+        room.votes = room.votes.filter((item) => {
+          const itemKey = item.voterKey || normalizeVoterKey(item.voterName);
+          return !(item.questionId === normalizedVote.questionId && itemKey === voterKey);
+        });
+        room.votes = [...room.votes, normalizedVote];
+        return roomApi.update(room);
+      },
+    );
   },
   async update(room: QuizRoom): Promise<QuizRoom> {
     const client = ensureSupabase();
