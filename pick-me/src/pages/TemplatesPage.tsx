@@ -13,8 +13,8 @@ export function TemplatesPage() {
     <section>
       <div className="page-head">
         <div>
-          <h1>Hazır quizler</h1>
-          <p>Kaotik, kızsal, karışık, ofis ve parti gibi konulardan şablon seç; sonra soruları istediğin gibi düzenle.</p>
+          <h1>Şablonlar</h1>
+          <p>Hazır akışlardan birini seç; soruları düzenle, birkaç dokunuşla odayı kur.</p>
         </div>
         <Link className="primary-button" to="/create">
           Sıfırdan oluştur
@@ -25,8 +25,8 @@ export function TemplatesPage() {
       <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
         {categories.map((category) => (
           <button
-            className={`shrink-0 rounded-2xl px-4 py-3 text-sm font-extrabold transition ${
-              selectedCategory === category ? "bg-grape text-white shadow-lg shadow-grape/20" : "border border-slate-200 bg-white/75 text-slate-700"
+            className={`shrink-0 rounded-xl px-4 py-3 text-sm font-extrabold transition ${
+              selectedCategory === category ? "bg-ink text-white shadow-lg shadow-slate-900/15" : "border border-slate-200 bg-white/75 text-slate-700 hover:bg-white"
             }`}
             key={category}
             onClick={() => setSelectedCategory(category)}
@@ -39,12 +39,12 @@ export function TemplatesPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         {visibleTemplates.map((template) => (
-          <article className="panel-card flex flex-col" key={template.id}>
+          <article className="panel-card flex flex-col transition hover:-translate-y-1 hover:border-grape/30" key={template.id}>
             <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-mint/15 text-emerald-700">
+              <div className="grid h-12 w-12 place-items-center rounded-xl bg-mint/15 text-emerald-700">
                 <Tags size={22} />
               </div>
-              <span className="rounded-full bg-white px-3 py-1.5 text-sm font-black text-slate-500">
+              <span className="soft-chip">
                 {template.category}
               </span>
             </div>
@@ -59,7 +59,7 @@ export function TemplatesPage() {
               ))}
             </div>
             <Link className="primary-button w-full justify-center" to={`/create/${template.id}`}>
-              Bu quizle başla
+              Bu şablonla başla
             </Link>
           </article>
         ))}

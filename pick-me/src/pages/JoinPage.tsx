@@ -99,12 +99,12 @@ export function JoinPage() {
   if (!roomId) {
     return (
       <section className="mx-auto max-w-2xl panel-card">
-        <h1 className="text-4xl font-black">Link ile gir</h1>
-        <p className="mt-3 leading-7 text-slate-600">Sana gelen oda kodunu yaz veya tam linki aç.</p>
+        <h1 className="text-4xl font-black">Odaya katıl</h1>
+        <p className="mt-3 leading-7 text-slate-600">Sana gelen oda kodunu yaz veya davet linkini aç.</p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <input className="plain-input" value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="room-..." />
           <button className="primary-button justify-center" onClick={() => manualCode && navigate(`/join/${manualCode}`)}>
-            Odaya git
+            Odayı aç
           </button>
         </div>
       </section>
@@ -115,7 +115,7 @@ export function JoinPage() {
     return (
       <section className="mx-auto max-w-2xl panel-card text-center">
         <h1 className="text-4xl font-black">Oda hazırlanıyor</h1>
-        <p className="mt-3 leading-7 text-slate-600">Backend’den oda bilgisi alınıyor.</p>
+        <p className="mt-3 leading-7 text-slate-600">Davet bilgileri alınıyor.</p>
       </section>
     );
   }
@@ -124,7 +124,7 @@ export function JoinPage() {
     return (
       <section className="mx-auto max-w-2xl panel-card text-center">
         <h1 className="text-4xl font-black">Oda bulunamadı</h1>
-        <p className="mt-3 leading-7 text-slate-600">Oda kodu hatalı olabilir veya backend henüz çalışmıyor olabilir.</p>
+        <p className="mt-3 leading-7 text-slate-600">Oda kodu hatalı olabilir veya bu oda artık kullanılamıyor olabilir.</p>
         <Link className="primary-button mt-6 justify-center" to="/">
           Ana sayfa
         </Link>
@@ -150,7 +150,7 @@ export function JoinPage() {
         </p>
       </div>
 
-      <div className="grid gap-2 rounded-2xl bg-slate-100 p-2 sm:grid-cols-[1fr_auto]">
+      <div className="grid gap-2 rounded-xl bg-slate-100 p-2 sm:grid-cols-[1fr_auto]">
         <input className="plain-input bg-white" readOnly value={link} />
         <button
           className="secondary-button justify-center"
@@ -165,7 +165,7 @@ export function JoinPage() {
       </div>
 
       {loggedInName ? (
-        <div className="mt-6 rounded-2xl bg-mint/15 p-4 text-sm font-bold leading-6 text-emerald-800">
+        <div className="success-box mt-6">
           {loggedInName} olarak katılıyorsun.
         </div>
       ) : (
@@ -175,7 +175,7 @@ export function JoinPage() {
         </label>
       )}
 
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-white/70 p-4">
+      <div className="mt-6 rounded-xl border border-slate-200 bg-white/70 p-4">
         <div className="mb-3 flex items-center gap-2 font-black">
           <UsersRound size={20} />
           Bekleme odası
@@ -206,7 +206,7 @@ export function JoinPage() {
             }}
           >
             <Play size={18} />
-            Odaya katıl
+            Katıl ve bekle
           </button>
         ) : null}
 
@@ -227,37 +227,37 @@ export function JoinPage() {
       </div>
 
       {!isOwner && hasJoined && !room.isStarted ? (
-        <div className="mt-4 rounded-2xl bg-honey/20 p-4 text-sm font-bold leading-6 text-amber-900">
-          Host oyunu başlatınca quiz otomatik açılacak.
+        <div className="warning-box mt-4">
+          Oda sahibi oyunu başlatınca quiz otomatik açılacak.
         </div>
       ) : null}
 
       {!isOwner && hasJoined && room.isStarted && !allFinished ? (
-        <div className="mt-4 rounded-2xl bg-mint/15 p-4 text-sm font-bold leading-6 text-emerald-800">
+        <div className="success-box mt-4">
           {currentPlayerFinished ? "Cevapların kaydedildi. Herkes bitirince sonuçlar açılacak." : "Oyun başladı. Kaldığın yerden devam edebilirsin."}
         </div>
       ) : null}
 
       {!isOwner && hasJoined && room.isStarted && allFinished && !room.resultsReleased ? (
-        <div className="mt-4 rounded-2xl bg-honey/20 p-4 text-sm font-bold leading-6 text-amber-900">
-          Herkes tamamladı. Host sonuçları açınca otomatik geçeceksin.
+        <div className="warning-box mt-4">
+          Herkes tamamladı. Oda sahibi sonuçları açınca otomatik geçeceksin.
         </div>
       ) : null}
 
       {!isOwner && hasJoined && room.isStarted && !currentPlayerFinished ? (
         <Link className="primary-button mt-4 justify-center" to={`/play/${room.id}/${answeredCount}`}>
-          Quize devam et
+          Devam et
         </Link>
       ) : null}
 
       {!isOwner && hasJoined && room.isStarted && allFinished && room.resultsReleased ? (
         <Link className="primary-button mt-4 justify-center" to={`/results/${room.id}`}>
-          Sonuçları gör
+          Sonuçlara git
         </Link>
       ) : null}
 
       {isOwner && room.isStarted ? (
-        <div className="mt-4 rounded-2xl bg-grape/10 p-4 text-sm font-bold leading-6 text-grape">
+        <div className="mt-4 rounded-xl bg-grape/10 p-4 text-sm font-bold leading-6 text-grape">
           Tamamlayanlar: {finishedCount(room)} / {room.participants.length}
         </div>
       ) : null}
@@ -272,7 +272,7 @@ export function JoinPage() {
             navigate(`/results/${room.id}`);
           }}
         >
-          Sonuçlara geç
+          Sonuçları aç
         </button>
       ) : null}
 
@@ -283,8 +283,8 @@ export function JoinPage() {
       ) : null}
 
       {isOwner && room.participants.length < 1 ? (
-        <div className="mt-4 rounded-2xl bg-honey/20 p-4 text-sm font-bold leading-6 text-amber-900">
-          Oyunu başlatmak için en az 1 katılımcının odaya katılması gerekiyor.
+        <div className="warning-box mt-4">
+          Oyunu başlatmak için en az 1 kişinin odaya katılması gerekiyor.
         </div>
       ) : null}
     </section>

@@ -86,7 +86,7 @@ export function PlayPage() {
     return (
       <section className="mx-auto max-w-2xl panel-card text-center">
         <h1 className="text-4xl font-black">Quiz yükleniyor</h1>
-        <p className="mt-3 leading-7 text-slate-600">Backend’den soru bilgisi alınıyor.</p>
+        <p className="mt-3 leading-7 text-slate-600">Soru bilgileri alınıyor.</p>
       </section>
     );
   }
@@ -106,9 +106,9 @@ export function PlayPage() {
     return (
       <section className="mx-auto max-w-2xl panel-card text-center">
         <h1 className="text-4xl font-black">Oyun henüz başlamadı</h1>
-        <p className="mt-3 leading-7 text-slate-600">Host oyunu başlatınca quiz ekranı açılacak.</p>
+        <p className="mt-3 leading-7 text-slate-600">Oda sahibi başlattığında quiz ekranı otomatik açılacak.</p>
         <Link className="primary-button mt-6 justify-center" to={`/join/${room.id}`}>
-          Bekleme odasına dön
+          Bekleme odasına git
         </Link>
       </section>
     );
@@ -122,16 +122,16 @@ export function PlayPage() {
   if (isFinished) {
     return (
       <section className="mx-auto max-w-3xl panel-card text-center">
-        <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-mint/15 text-emerald-700">
+        <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-xl bg-mint/15 text-emerald-700">
           <Check size={28} />
         </div>
         <h1 className="text-4xl font-black">Quiz tamamlandı</h1>
         <p className="mt-3 leading-7 text-slate-600">
           {isOwner
-            ? "Herkes bitirdiğinde sonuçları açabilirsin."
-            : "Oda sahibi herkes bitirince sonuç ekranını açacaktır."}
+            ? "Herkes bitirdiğinde sonuç ekranını açabilirsin."
+            : "Oda sahibi herkes bitirince sonuç ekranını açacak."}
         </p>
-        <div className="mt-6 rounded-2xl bg-white/75 p-4 text-sm font-black text-slate-600">
+        <div className="mt-6 rounded-xl bg-white/75 p-4 text-sm font-black text-slate-600">
           Tamamlayanlar: {room.participants.filter((participant) => answeredCountFor(room, normalizeVoterKey(participant)) >= room.questions.length).length} /{" "}
           {room.participants.length}
         </div>
@@ -147,15 +147,15 @@ export function PlayPage() {
                 navigate(`/results/${room.id}`);
               }}
             >
-              Sonuçları gör
+              Sonuçları aç
             </button>
             {!allFinished ? (
-              <p className="mt-3 text-sm font-bold text-slate-500">Herkes bitirince buton aktif olacak.</p>
+              <p className="mt-3 text-sm font-bold text-slate-500">Herkes tamamlayınca buton aktif olacak.</p>
             ) : null}
           </>
         ) : (
-          <div className="mt-6 rounded-2xl bg-honey/20 p-4 text-sm font-bold leading-6 text-amber-900">
-            Sonuçlar host tarafından açılınca otomatik geçeceksin.
+          <div className="warning-box mt-6">
+            Sonuçlar oda sahibi tarafından açılınca otomatik geçeceksin.
           </div>
         )}
       </section>
@@ -188,7 +188,7 @@ export function PlayPage() {
       <h1 className="mb-6 text-4xl font-black leading-tight">{question.text}</h1>
 
       {options.length === 0 ? (
-        <div className="rounded-2xl bg-honey/20 p-4 font-bold leading-6 text-amber-900">
+        <div className="warning-box">
           Bu soru katılımcı adlarını cevap olarak kullanıyor. Odaya katılan ilk isimler göründükçe seçenekler oluşur.
         </div>
       ) : (

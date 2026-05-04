@@ -34,23 +34,23 @@ export function AuthPage() {
   return (
     <section className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[0.9fr_1.1fr]">
       <div className="panel-card">
-        <div className="mb-5 inline-flex rounded-full bg-grape/10 px-4 py-2 text-sm font-bold text-grape">
+        <div className="eyebrow mb-5">
           {mode === "signup" ? "Hesap oluştur" : "Tekrar hoş geldin"}
         </div>
         <h1 className="text-5xl font-black leading-tight">
-          Quiz odalarını yönetmek için giriş yap.
+          Odalarını kurmak ve yönetmek için giriş yap.
         </h1>
         <p className="mt-5 leading-8 text-slate-600">
-          Oda oluşturma üyelik gerektirir. Katılımcılar ise paylaştığın link üzerinden
-          isimleriyle quize girebilir.
+          Hesabınla quiz odası oluşturabilir, link paylaşabilir ve sonuçları tekrar açabilirsin.
+          Katılımcılar için üyelik gerekmez.
         </p>
-        <div className="mt-6 rounded-2xl bg-slate-900 p-4 text-sm leading-6 text-white">
+        <div className="mt-6 rounded-xl bg-slate-900 p-4 text-sm leading-6 text-white">
           Supabase durumu: {isSupabaseConfigured ? "Bağlantı anahtarları hazır." : "Şimdilik yerel demo modu aktif."}
         </div>
       </div>
 
       <form className="panel-card space-y-4" onSubmit={handleSubmit(submit)}>
-        <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+        <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
           <button className={`tab-button ${mode === "signin" ? "active" : ""}`} type="button" onClick={() => setMode("signin")}>
             Giriş yap
           </button>
@@ -85,11 +85,11 @@ export function AuthPage() {
           </div>
         </label>
 
-        {error ? <p className="rounded-2xl bg-berry/10 p-3 text-sm font-bold text-pink-700">{error}</p> : null}
+        {error ? <p className="rounded-xl bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</p> : null}
         {formState.errors.password ? <p className="text-sm font-bold text-pink-700">Şifre en az 4 karakter olmalı.</p> : null}
 
         <button className="primary-button w-full justify-center" type="submit">
-          {mode === "signup" ? "Kaydol ve devam et" : "Giriş yap"}
+          {mode === "signup" ? "Hesap oluştur ve devam et" : "Giriş yap ve devam et"}
         </button>
       </form>
     </section>

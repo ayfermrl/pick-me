@@ -256,7 +256,7 @@ function SummaryGrid({ room, onSelect }: { room: QuizRoom; onSelect?: (index: nu
         const top = data[0];
         return (
           <button
-            className="rounded-2xl border border-slate-200 bg-white/75 p-4 text-left transition hover:-translate-y-0.5"
+            className="rounded-xl border border-slate-200 bg-white/75 p-4 text-left transition hover:-translate-y-0.5 hover:border-grape/30"
             key={question.id}
             onClick={() => onSelect?.(index)}
             type="button"
@@ -286,8 +286,8 @@ function ResultRows({ data, isAnonymous }: { data: ResultItem[]; isAnonymous: bo
     <div className="mt-6">
       <div className="mb-3 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
         <div>
-          <h3 className="text-2xl font-black">Top 5</h3>
-          <p className="mt-1 text-sm font-semibold text-slate-500">En çok oy alan cevaplar yatay sırada.</p>
+          <h3 className="text-2xl font-black">En çok seçilenler</h3>
+          <p className="mt-1 text-sm font-semibold text-slate-500">İlk 5 cevap; çok katılımcılı odalarda listeyi genişletebilirsin.</p>
         </div>
         {remaining.length ? (
           <button className="secondary-button min-h-10 px-4 text-sm" onClick={() => setShowAll((value) => !value)}>
@@ -298,7 +298,7 @@ function ResultRows({ data, isAnonymous }: { data: ResultItem[]; isAnonymous: bo
 
       <div className="grid gap-3">
         {visibleRows.map((item, index) => (
-          <div className="rounded-2xl bg-white/75 p-4" key={item.name}>
+          <div className="rounded-xl bg-white/75 p-4" key={item.name}>
             <div className="mb-2 grid grid-cols-[36px_1fr_auto] items-center gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-grape/10 text-sm font-black text-grape">
                 {index + 1}
@@ -349,7 +349,7 @@ export function ResultsPage() {
     return (
       <section className="mx-auto max-w-2xl panel-card text-center">
         <h1 className="text-4xl font-black">Sonuçlar yükleniyor</h1>
-        <p className="mt-3 leading-7 text-slate-600">Backend’den güncel oda verisi alınıyor.</p>
+        <p className="mt-3 leading-7 text-slate-600">Güncel sonuçlar alınıyor.</p>
       </section>
     );
   }
@@ -448,19 +448,19 @@ export function ResultsPage() {
         </div>
         <button className="secondary-button" onClick={() => navigator.clipboard.writeText(link)}>
           <Copy size={18} />
-          Link kopyala
+          Oda linkini kopyala
         </button>
       </div>
 
       {!room.resultsReleased ? (
         <div className="panel-card">
-          <h2 className="text-3xl font-black">Sonuçlar henüz kilitli</h2>
+          <h2 className="text-3xl font-black">Sonuçlar beklemede</h2>
           <p className="mt-2 text-slate-600">
-            {everyoneDone ? "Herkes bitirdi. Host sonuçları açınca bu ekran güncellenecek." : "Herkes tüm soruları bitirince host sonuçları açabilecek."}
+            {everyoneDone ? "Herkes bitirdi. Oda sahibi sonuçları açınca bu ekran güncellenecek." : "Herkes tüm soruları bitirince oda sahibi sonuçları açabilecek."}
           </p>
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {progress.map((item) => (
-              <div className="rounded-2xl bg-white/75 p-4" key={item.name}>
+              <div className="rounded-xl bg-white/75 p-4" key={item.name}>
                 <div className="mb-2 flex justify-between gap-3 font-black">
                   <span>{item.name}</span>
                   <span>
@@ -477,20 +477,20 @@ export function ResultsPage() {
             ))}
           </div>
           <Link className="secondary-button mt-6 justify-center" to={`/join/${room.id}`}>
-            Bekleme odasına dön
+            Bekleme odasına git
           </Link>
         </div>
       ) : room.votes.length === 0 ? (
         <div className="panel-card text-center">
-          <h2 className="text-3xl font-black">Henüz oy yok</h2>
-          <p className="mt-2 text-slate-600">Linki paylaşınca istatistikler burada dolacak.</p>
+          <h2 className="text-3xl font-black">Henüz cevap yok</h2>
+          <p className="mt-2 text-slate-600">Katılımcılar oy verdikçe istatistikler burada oluşacak.</p>
         </div>
       ) : room.showSummary ? (
         <article className="panel-card">
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <h2 className="text-3xl font-black">Özet</h2>
-              <p className="mt-2 text-slate-600">Bütün soruların kazananı ve oy sayısı tek ekranda.</p>
+              <p className="mt-2 text-slate-600">Tüm soruların kazananı ve oy sayısı tek bakışta.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <button className="primary-button" onClick={shareSummaryImage}>
@@ -499,7 +499,7 @@ export function ResultsPage() {
               </button>
               <button className="primary-button" onClick={shareSummary}>
                 <Share2 size={18} />
-                Metin paylaş
+                Metin kopyala
               </button>
               {isOwner ? (
                 <button className="secondary-button" onClick={() => goToQuestion(room.questions.length - 1)}>
@@ -508,9 +508,7 @@ export function ResultsPage() {
               ) : null}
             </div>
           </div>
-          {shareStatus ? (
-            <div className="mb-4 rounded-2xl bg-mint/15 p-3 text-sm font-black text-emerald-800">{shareStatus}</div>
-          ) : null}
+          {shareStatus ? <div className="success-box mb-4">{shareStatus}</div> : null}
           <SummaryGrid room={room} onSelect={isOwner ? goToQuestion : undefined} />
         </article>
       ) : (
@@ -551,13 +549,13 @@ export function ResultsPage() {
             </div>
 
             {isOwner ? (
-              <div className="mb-4 rounded-2xl bg-grape/10 p-3 text-sm font-bold text-grape">
-                Sonuç ekranında soru geçişini oyun sahibi yönetir; herkes aynı istatistiği birlikte takip eder.
+              <div className="mb-4 rounded-xl bg-grape/10 p-3 text-sm font-bold text-grape">
+                Soru geçişini oda sahibi yönetir; herkes aynı istatistiği birlikte takip eder.
               </div>
             ) : null}
 
             {winner?.oy ? (
-              <div className="mb-6 flex items-center gap-3 rounded-2xl bg-honey/20 p-4 font-black text-amber-900">
+              <div className="mb-6 flex items-center gap-3 rounded-xl bg-amber-50 p-4 font-black text-amber-900">
                 <Trophy size={22} />
                 En çok seçilen: {winner.name} · {winner.oy} oy
               </div>

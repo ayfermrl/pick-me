@@ -122,35 +122,35 @@ export function CreateQuizPage() {
       <div className="page-head">
         <div>
           <h1>Quiz oluştur</h1>
-          <p>Her soruda cevapları katılan kişilerden veya özel seçeneklerden seçebilirsin.</p>
+          <p>Soruları yaz, cevap tipini seç, odayı kur. Katılımcılar linkle girip oy versin.</p>
         </div>
       </div>
 
       <form className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr]" onSubmit={handleSubmit(submit)}>
         <div className="panel-card space-y-4">
           <label className="field">
-            <span>Quiz adı</span>
+            <span>Oda adı</span>
             <input className="plain-input" {...register("title", { required: true })} />
           </label>
 
           <label className="switch-row">
             <span>
               <b>Anonim sonuç</b>
-              <small>Oy veren isimleri sonuçlarda gizlenir.</small>
+              <small>Kimin neye oy verdiği sonuçlarda görünmez.</small>
             </span>
             <input type="checkbox" {...register("isAnonymous")} />
           </label>
           <label className="switch-row">
             <span>
               <b>Katılımda ad zorunlu</b>
-              <small>Katılan isimleri, katılımcı cevaplı sorularda seçenek olarak görünür.</small>
+              <small>İsimler, “Katılımcılar” cevap tipinde seçenek olur.</small>
             </span>
             <input type="checkbox" {...register("requireName")} />
           </label>
 
-          <div className="rounded-2xl bg-mint/15 p-4 text-sm font-bold leading-6 text-emerald-800">
+          <div className="success-box">
             <UsersRound className="mb-2" size={22} />
-            “Katılımcılar” seçilen sorularda cevaplar oda linkinden giren isimlerden oluşur.
+            Katılımcılar seçeneği, odaya giren isimleri otomatik cevap şıkkına dönüştürür.
           </div>
         </div>
 
@@ -158,7 +158,7 @@ export function CreateQuizPage() {
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-3xl font-black">Sorular</h2>
-              <p className="text-slate-600">Sorunun altında cevap tipini belirle.</p>
+              <p className="text-slate-600">Her kart bir soru. İstersen havuzdan fikir al.</p>
             </div>
             <button
               className="secondary-button"
@@ -171,13 +171,13 @@ export function CreateQuizPage() {
               }
             >
               <Plus size={18} />
-              Soru
+              Soru ekle
             </button>
           </div>
 
           <div className="space-y-4">
             {questions.map((question, index) => (
-              <div className="rounded-[22px] border border-slate-200 bg-white/70 p-4" key={question.id}>
+              <div className="rounded-xl border border-slate-200 bg-white/70 p-4" key={question.id}>
                 <label className="field">
                   <span className="flex flex-wrap items-center justify-between gap-2">
                     <span>Soru {index + 1}</span>
@@ -187,7 +187,7 @@ export function CreateQuizPage() {
                       onClick={() => suggestQuestion(question.id)}
                     >
                       <Shuffle size={15} />
-                      Rastgele
+                      Fikir ver
                     </button>
                   </span>
                   <input
@@ -198,7 +198,7 @@ export function CreateQuizPage() {
                   />
                 </label>
 
-                <div className="mt-4 grid gap-2 rounded-2xl bg-slate-100 p-1 sm:grid-cols-2">
+                <div className="mt-4 grid gap-2 rounded-xl bg-slate-100 p-1 sm:grid-cols-2">
                   <button
                     className={`tab-button ${question.answerMode === "participants" ? "active" : ""}`}
                     type="button"
@@ -216,7 +216,7 @@ export function CreateQuizPage() {
                 </div>
 
                 {question.answerMode === "custom" ? (
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 p-3">
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-white/80 p-3">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <span className="font-extrabold text-slate-700">Özel cevap seçenekleri</span>
                       <button
@@ -225,7 +225,7 @@ export function CreateQuizPage() {
                         onClick={() => updateQuestion(question.id, { customOptions: [...question.customOptions, ""] })}
                       >
                         <Plus size={16} />
-                        Cevap
+                        Seçenek ekle
                       </button>
                     </div>
                     <div className="grid gap-2">
@@ -258,8 +258,8 @@ export function CreateQuizPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-4 rounded-2xl bg-grape/10 p-4 text-sm font-bold leading-6 text-grape">
-                    Bu soruda cevap seçenekleri quiz linkinden katılan kişilerin adları olacak.
+                  <div className="hint-box mt-4">
+                    Bu soruda cevap seçenekleri, odaya katılan kişilerin adları olacak.
                   </div>
                 )}
 
@@ -275,12 +275,12 @@ export function CreateQuizPage() {
             ))}
           </div>
 
-          <div className="mt-6 rounded-2xl bg-grape/10 p-4 text-sm font-bold text-grape">
-            Önizleme: {watch("isAnonymous") ? "Anonim sonuç" : "İsimli sonuç"} · {questions.length} soru
+          <div className="mt-6 rounded-xl bg-grape/10 p-4 text-sm font-bold text-grape">
+            Kurulum özeti: {watch("isAnonymous") ? "Anonim sonuç" : "İsimli sonuç"} · {questions.length} soru
           </div>
 
           <button className="primary-button mt-5 w-full justify-center" type="submit">
-            Odayı oluştur
+            Odayı kur ve linki al
           </button>
         </div>
       </form>

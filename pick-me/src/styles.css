@@ -12,6 +12,8 @@
   body {
     margin: 0;
     font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    background: #f7f8fc;
+    color: #161923;
   }
 
   button,
@@ -32,27 +34,31 @@
 
 @layer components {
   .nav-pill {
-    @apply inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/70 px-4 text-sm font-bold text-slate-700 transition hover:-translate-y-0.5 hover:bg-white;
+    @apply inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/70 px-4 text-sm font-extrabold text-slate-600 transition hover:bg-white hover:text-ink;
+  }
+
+  .nav-pill.active {
+    @apply border-grape/20 bg-grape/10 text-grape;
   }
 
   .primary-pill {
-    @apply inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-grape to-berry px-5 text-sm font-extrabold text-white shadow-lg shadow-grape/20 transition hover:-translate-y-0.5;
+    @apply inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-ink px-5 text-sm font-extrabold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5;
   }
 
   .primary-button {
-    @apply inline-flex min-h-14 items-center gap-2 rounded-2xl bg-gradient-to-r from-grape to-[#b799ff] px-6 font-extrabold text-white shadow-lg shadow-grape/20 transition hover:-translate-y-0.5;
+    @apply inline-flex min-h-12 items-center gap-2 rounded-xl bg-ink px-5 font-extrabold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800;
   }
 
   .secondary-button {
-    @apply inline-flex min-h-14 items-center gap-2 rounded-2xl border border-slate-200 bg-white/75 px-6 font-extrabold text-slate-700 transition hover:-translate-y-0.5 hover:bg-white;
+    @apply inline-flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-5 font-extrabold text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white;
   }
 
   .danger-button {
-    @apply inline-flex min-h-10 items-center gap-2 rounded-xl bg-berry/10 px-4 text-sm font-extrabold text-pink-700 transition hover:-translate-y-0.5;
+    @apply inline-flex min-h-10 items-center gap-2 rounded-xl bg-rose-50 px-4 text-sm font-extrabold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-100;
   }
 
   .panel-card {
-    @apply rounded-[22px] border border-white/80 bg-white/75 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl md:p-7;
+    @apply rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-2xl md:p-7;
   }
 
   .page-head {
@@ -60,7 +66,7 @@
   }
 
   .page-head h1 {
-    @apply text-5xl font-black leading-tight tracking-normal md:text-6xl;
+    @apply text-4xl font-black leading-tight tracking-normal md:text-5xl;
   }
 
   .page-head p {
@@ -76,11 +82,11 @@
   }
 
   .plain-input {
-    @apply min-h-12 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-ink outline-none transition focus:border-grape/60 focus:ring-4 focus:ring-grape/10;
+    @apply min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-ink outline-none transition placeholder:text-slate-400 focus:border-grape/60 focus:ring-4 focus:ring-grape/10;
   }
 
   .input-shell {
-    @apply flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 text-slate-500 transition focus-within:border-grape/60 focus-within:ring-4 focus-within:ring-grape/10;
+    @apply flex min-h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-slate-500 transition focus-within:border-grape/60 focus-within:ring-4 focus-within:ring-grape/10;
   }
 
   .input-shell input {
@@ -88,7 +94,7 @@
   }
 
   .tab-button {
-    @apply rounded-xl px-4 py-3 font-extrabold text-slate-500 transition;
+    @apply rounded-xl px-4 py-3 font-extrabold text-slate-500 transition hover:text-ink;
   }
 
   .tab-button.active {
@@ -96,7 +102,7 @@
   }
 
   .switch-row {
-    @apply flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/65 p-4;
+    @apply flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white/75 p-4;
   }
 
   .switch-row span {
@@ -116,7 +122,7 @@
   }
 
   .answer-card {
-    @apply grid min-h-16 grid-cols-[44px_1fr_auto] items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 p-3 text-left transition hover:-translate-y-0.5;
+    @apply grid min-h-16 grid-cols-[44px_1fr_auto] items-center gap-3 rounded-xl border border-slate-200 bg-white/90 p-3 text-left transition hover:-translate-y-0.5 hover:border-grape/40;
   }
 
   .answer-card.active {
@@ -141,5 +147,25 @@
 
   .check-dot {
     @apply grid h-8 w-8 place-items-center rounded-full bg-grape font-black text-white;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full bg-grape/10 px-3 py-1.5 text-sm font-black text-grape;
+  }
+
+  .hint-box {
+    @apply rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-600;
+  }
+
+  .success-box {
+    @apply rounded-xl bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-800;
+  }
+
+  .warning-box {
+    @apply rounded-xl bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-900;
+  }
+
+  .soft-chip {
+    @apply rounded-full bg-slate-100 px-3 py-1.5 text-sm font-black text-slate-600;
   }
 }
